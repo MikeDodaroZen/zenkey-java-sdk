@@ -1,0 +1,47 @@
+HELP.md
+/git /
+!.mvn/wrapper/maven-wrapper.jar
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+log
+logs
+report
+target
+lib
+bin
+
+### project config files ###
+.cfg
+
+### IntelliJ IDEA ###
+.idea
+.mvn
+*.iws
+*.iml
+*.ipr
+
+### MAC stuff ###
+*.DS_Store
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+/build/
+
+### miscellaneous ###
+.pmd
+
+# vim
+*.swp
+
+*.DS_Store
