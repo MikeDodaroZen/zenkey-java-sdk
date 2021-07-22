@@ -9,11 +9,11 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.zenkey</groupId>
-    <artifactId>discovery-issuer-sdk</artifactId>
+    <artifactId>zenkey-java-sdk</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>discovery-issuer-sdk</name>
-    <description>Demo project for Spring Boot</description>
+    <name>zenkey-java-sdk</name>
+    <description>Zenkey Java SDK For SpringBoot Application</description>
     <properties>
         <java.version>11</java.version>
     </properties>
