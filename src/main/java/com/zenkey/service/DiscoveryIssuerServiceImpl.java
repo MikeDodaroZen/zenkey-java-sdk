@@ -13,13 +13,15 @@ public class DiscoveryIssuerServiceImpl implements DiscoveryIssuerService {
 
     private RestTemplate restTemplate = new RestTemplate();
 
+
+    @Override
     public ResponseEntity callDiscoveryIssuerService(String clientId, String mccmnc, String sub, String phoneNumber) {
 
         ResponseEntity<Object> responseEntity = null;
 
         try {
             UriComponentsBuilder urlBuilder = UriComponentsBuilder.newInstance()
-                    .fromHttpUrl("https://discoveryissuer-dev.myzenkey.com/.well-known/openid_configuration")
+                    .fromHttpUrl("https://discoveryissuer.xcijv.com/.well-known/openid_configuration")
                     .queryParam("client_id", clientId);
             if (mccmnc != null) {
                 urlBuilder = urlBuilder.queryParam("mccmnc", mccmnc);

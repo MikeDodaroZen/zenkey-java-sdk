@@ -25,7 +25,7 @@ public class DiscoveryIssuerAPIController {
         String clientId = "ccid-oauthplayground1";
         String mccmnc = "310260";
         String sub = null;                // "310260-U-2e0934d5-8c7f-429e-88ac-338116dc05e9";
-        String phoneNumber = "13478919548";
+       String phoneNumber = "13478919548";
        ResponseEntity responseEntity = discoveryIssuerService.callDiscoveryIssuerService(clientId,mccmnc,sub,phoneNumber);
        return responseEntity;
     }
