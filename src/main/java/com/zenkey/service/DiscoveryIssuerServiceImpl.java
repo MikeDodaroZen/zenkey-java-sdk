@@ -85,10 +85,18 @@ public class DiscoveryIssuerServiceImpl implements DiscoveryIssuerService {
         String authorizationUrl = ((ObjectNode) jsonNode).get("authorization_endpoint").asText();
         String tokenUrl = ((ObjectNode) jsonNode).get("token_endpoint").asText();
         String userInfoUrl = ((ObjectNode) jsonNode).get("userinfo_endpoint").asText();
+        String serverInitiatedAuthUrl = ((ObjectNode) jsonNode).get("server_initiated_authorization_endpoint").asText();
+        String serverInitiatedCancelUrl = ((ObjectNode) jsonNode).get("server_initiated_cancel_endpoint").asText();
+        String mccmnc = ((ObjectNode) jsonNode).get("mccmnc").asText();
+        String issuer = ((ObjectNode) jsonNode).get("issuer").asText();
 
         oidcUrlInfo.setAuthorizationEndpoint(authorizationUrl);
         oidcUrlInfo.setTokenEndpoint(tokenUrl);
         oidcUrlInfo.setUserInfoEndpoint(userInfoUrl);
+        oidcUrlInfo.setServerInitiatedAuthorizationEndpoint(serverInitiatedAuthUrl);
+        oidcUrlInfo.setServerInitiatedCancelEndpoint(serverInitiatedCancelUrl);
+        oidcUrlInfo.setMccmnc(mccmnc);
+        oidcUrlInfo.setIssuer(issuer);
 
         return oidcUrlInfo;
     }

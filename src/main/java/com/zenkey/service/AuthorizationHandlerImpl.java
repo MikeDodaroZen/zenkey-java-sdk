@@ -62,12 +62,10 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
 
         if (mccmnc == null || mccmnc.trim().length() == 0) {
-            authorizationResponse = constructAuthorizationOidcResponse(false, "Authorization failed.  Carrier was not found", AuthorizationStatus.FAILED.name(), null, false);
-            return authorizationResponse;
+            return constructAuthorizationOidcResponse(false, "Authorization failed.  Carrier was not found", AuthorizationStatus.FAILED.name(), null, false);
         }
         if (loginHintToken == null || loginHintToken.trim().length() == 0) {
-            authorizationResponse = constructAuthorizationOidcResponse(false, "Authorization failed.  A login hint token is required for authorization", AuthorizationStatus.FAILED.name(), null, false);
-            return authorizationResponse;
+            return constructAuthorizationOidcResponse(false, "Authorization failed.  A login hint token is required for authorization", AuthorizationStatus.FAILED.name(), null, false);
         }
 
         log.info("===> Creating new DiscoveryIssuerServiceImpl object");
@@ -81,31 +79,25 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }  catch (Exception ex) {
             String returnMessage = String.format("Authorization Failed: %s", ex.getMessage());
             log.error(returnMessage);
-            authorizationResponse = constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
-            return authorizationResponse;
+            return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
         }
         log.info("===> Authorization response is {}", responseEntityAuth.getBody());
 
         if (responseEntityAuth.getBody() == null) {
             String parseAuthorizationUrlError = "Not able to parse authorization URL from Oidc config";
             log.error(parseAuthorizationUrlError);
-            authorizationResponse = constructAuthorizationOidcResponse(false, parseAuthorizationUrlError, AuthorizationStatus.FAILED.name(), null);
-            return authorizationResponse;
+            return constructAuthorizationOidcResponse(false, parseAuthorizationUrlError, AuthorizationStatus.FAILED.name(), null);
         }
 
         OidcUrlInfo oidcUrlInfo = discoveryIssuerService.buildOidcUrlInfo(responseEntityAuth.getBody());
         if (oidcUrlInfo == null) {
-            authorizationResponse = constructAuthorizationOidcResponse(false, "Error parsisng authorization URL from Oidc config", AuthorizationStatus.FAILED.name(), null);
+            return constructAuthorizationOidcResponse(false, "Error parsing authorization URL from Oidc config", AuthorizationStatus.FAILED.name(), null);
         } else {
             log.info("===> OidcUrlInfo: " + oidcUrlInfo.toString());
 
             String redirectForAuthorizationMessage = "Redirect for authorization";
-            authorizationResponse = constructAuthorizationOidcResponse(false, "Returning OIDC Url Info", AuthorizationStatus.FAILED.name(), null, true, true, oidcUrlInfo);
-            return authorizationResponse;
+            return constructAuthorizationOidcResponse(false, "Returning OIDC Url Info", AuthorizationStatus.SUCCESSFUL.name(), null, true, true, oidcUrlInfo);
         }
-
-        authorizationResponse = constructAuthorizationOidcResponse(true, "Authorization Was Successful", AuthorizationStatus.SUCCESSFUL.name(), null);
-        return authorizationResponse;
     }
 
     public AuthorizationOidcResponse getAuthorizationToken(String clientId, String tokenEndPoint, String userInfoEndpoint, String mccmnc, String code, String clientKeyPairs, String keyPair) {
@@ -120,8 +112,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         } catch (Exception ex) {
             String returnMessage = String.format("===> Get Authorization Token Failed: %s", ex.getMessage());
             log.error(returnMessage);
-            authorizationResponse = constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
-            return authorizationResponse;
+            return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
         }
 
         TokenRequestBody tokenRequestBody = createTokenRequestBody(clientId, mccmnc, signedAssertion, code);
@@ -130,11 +121,13 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
             tokenResponse = getTokenV2(tokenRequestBody, tokenEndPoint);
             log.info("Just got token response from getTokenV2: {}", tokenResponse);
         } catch (OauthException ex) {
-            String returnMessage = String.format("Error getting token: OAuthException: %s", ex.getMessage());
-            authorizationResponse = constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
+            String returnedMessage = String.format("Error getting tokenV2: OAuthException: %s", ex.getMessage());
+            log.error(returnedMessage);
+            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
         } catch (Exception ex) {
-            String returnMessage = String.format("Error getting token: Exception: %s", ex.getMessage());
-            authorizationResponse = constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
+            String returnedMessage = String.format("Error getting tokenV2: Exception: %s", ex.getMessage());
+            log.error(returnedMessage);
+            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
         }
         log.info("Token response from getTokenV2: {}", tokenResponse);
 
@@ -143,9 +136,13 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         try {
             jsonNode = mapper.readTree(tokenResponse);
         } catch (JsonMappingException ex) {
-            log.error("Error JSON parsing tokenResponse: ", ex.getMessage());
+            String returnedMessage = String.format("Error JSON parsing tokenResponse: JsonMappingException: %s", ex.getMessage());
+            log.error(returnedMessage);
+            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
         } catch (JsonProcessingException ex) {
-            log.error("Error JSON parsing tokenResponse: ", ex.getMessage());
+            String returnedMessage = String.format("Error JSON parsing tokenResponse: JsonProcessingException: %s", ex.getMessage());
+            log.error(returnedMessage);
+            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
         }
         String accessToken = ((ObjectNode) jsonNode).get("access_token").asText();
         log.info("===> Parsed accessToken: {}", accessToken);
@@ -155,9 +152,17 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         try {
             userInfoResponse = getUserInfo(userInfoEndpoint, accessToken);
         } catch (Exception ex) {
-            log.error("Error with getUserInfo: Exception: {}", ex.getMessage());
+            String returnedMessage = String.format("Error with getUserInfo: Exception: %s", ex.getMessage());
+            log.error(returnedMessage);
+            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
         }
         log.info("userInfoResponse: {}", userInfoResponse);
+
+        if (userInfoResponse == null) {
+            String returnedMessage = "User Info is empty.  This is considered abnormal, therefore an error";
+            log.error(returnedMessage);
+            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
+        }
 
         JsonNode userInfoJson = null;
 
@@ -165,14 +170,79 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         try {
             userInfoJson = mapper.readTree(userInfoResponse.toString());
         } catch (JsonMappingException ex) {
-
+            String returnedMessage = String.format("Error converting JSONObject to JsonNode: JsonMappingException: %s", ex.getMessage());
+            log.error(returnedMessage);
+            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
         } catch (JsonProcessingException ex) {
-
+            String returnedMessage = String.format("Error converting JSONObject to JsonNode: JsonProcessingException: %s", ex.getMessage());
+            log.error(returnedMessage);
+            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
         }
 
         authorizationResponse = constructAuthorizationOidcResponse(true, "Get User Info Was Successful", AuthorizationStatus.SUCCESSFUL.name(), userInfoJson);
         log.info("Leaving getAuthorizationToken");
         return authorizationResponse;
+    }
+
+    public AuthorizationOidcResponse getAuthorizationServerInitiated(String clientId, String sub, String redirectUri, String clientKeyPairs, String keyPair) {
+        log.info("===> Calling");
+        log.info("===> sub: {}", sub );
+
+        AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
+
+        if (sub == null || sub.trim().length() == 0) {
+            return constructAuthorizationOidcResponse(false, "Authorization Verification failed.  Sub is empty", AuthorizationStatus.FAILED.name(), null, false);
+        }
+
+        log.info("===> Creating new DiscoveryIssuerServiceImpl object");
+        DiscoveryIssuerService discoveryIssuerService = new DiscoveryIssuerServiceImpl();
+        ResponseEntity<String> responseEntityAuth = null;
+        log.info("===> About to get authorization response");
+        try {
+            responseEntityAuth = discoveryIssuerService.callDiscoveryIssuerService(clientId, null, sub, null);
+            log.info("===> Successfully got authorization response");
+            log.info("======================= Completed Step 1 or 3 - Discovery Issuer:  Received OIDC Config");
+        }  catch (Exception ex) {
+            String returnMessage = String.format("Authorization Failed: %s", ex.getMessage());
+            log.error(returnMessage);
+            return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
+        }
+        log.info("===> Authorization response is {}", responseEntityAuth.getBody());
+
+        if (responseEntityAuth.getBody() == null) {
+            String parseAuthorizationUrlError = "Not able to parse authorization URL from Oidc config";
+            log.error(parseAuthorizationUrlError);
+            return constructAuthorizationOidcResponse(false, parseAuthorizationUrlError, AuthorizationStatus.FAILED.name(), null);
+        }
+
+        OidcUrlInfo oidcUrlInfo = discoveryIssuerService.buildOidcUrlInfo(responseEntityAuth.getBody());
+        if (oidcUrlInfo == null) {
+            return constructAuthorizationOidcResponse(false, "Error parsing OIDC info from Oidc config", AuthorizationStatus.FAILED.name(), null);
+        }
+
+        String signedAssertion = "";
+        String tokenResponse = "";
+
+        try {
+            signedAssertion = getSignedAssertionServerInitiated(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), clientKeyPairs, keyPair);
+        } catch (Exception ex) {
+            String returnMessage = String.format("===> Get Authorization Token Failed: %s", ex.getMessage());
+            log.error(returnMessage);
+            return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
+        }
+
+        ServerInitiatedRequestBody serverInitiatedRequestBody = createServerInitiatedRequestBody(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), oidcUrlInfo.getServerInitiatedCancelEndpoint(), signedAssertion);
+
+        String returnedMessage = null;
+        try {
+            returnedMessage = callServerInitiatedRequest(serverInitiatedRequestBody);
+        } catch (Exception ex) {
+            String returnMessage = String.format("===> Exception doing server-initiated request: %s", ex.getMessage());
+            log.error(returnMessage);
+            return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
+        }
+
+        return constructAuthorizationOidcResponse(true, "Server-Initiated Request Was Successful", AuthorizationStatus.SUCCESSFUL.name(), null);
     }
 
     private String getSignedAssertion(String clientId, String tokenEndpoint, String mccmnc, String code, String clientKeyPairs, String keyPair) {
@@ -193,7 +263,18 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
 
         ObjectMapper mapper = new ObjectMapper();
 
-        String jwtKeyId = clientId + ".1623943437897";
+        JSONObject parseKeyPairs = null;
+        try {
+            parseKeyPairs = JSONObjectUtils.parse(clientKeyPairs);
+        } catch (ParseException ex) {
+            String returnedMessage = String.format("JSONProcessingException: Error converting AssertionBody to JSON string: %s", ex.getMessage());
+            log.error(returnedMessage);
+        }
+        Object signingKey = parseKeyPairs.get(clientId);
+        log.info("===> signingKey: " + signingKey);
+
+        // String jwtKeyId = clientId + ".1623943437897";
+        String jwtKeyId = signingKey == null ? "" : signingKey.toString();
 
         JwtHeaderAssertion jwtHeaderAssertion = createJwtHeaderAssertion(jwtKeyId);
 
@@ -205,7 +286,61 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
             jwtHeaderAssertionJsonStrng = mapper.writeValueAsString(jwtHeaderAssertion);
             assertionBodyJsonString = mapper.writeValueAsString(assertionBody);
         } catch (JsonProcessingException ex) {
-            log.error("JSONProcessingException: Error converting AssertionBody to JSON string: {}", ex.getMessage());
+            String returnedMessage = String.format("JSONProcessingException: Error converting AssertionBody to JSON string: %s", ex.getMessage());
+            log.error(returnedMessage);
+        }
+        log.info("JwtHeaderAssertion JSON string: {}", jwtHeaderAssertionJsonStrng);
+        log.info("AssertionBody JSON string: {}", assertionBodyJsonString);
+
+        String unsignedAssertion = createUnsignedJwt(jwtHeaderAssertionJsonStrng, assertionBodyJsonString);
+        log.info("unsignedAssertion: {}", unsignedAssertion);
+
+        String signedAssertion = "";
+
+        try {
+            signedAssertion = createSignedRSAToken(unsignedAssertion, clientId, clientKeyPairs, keyPair);
+        } catch (ParseException ex) {
+            log.error("ParseException: Error creating signed assertion: {}", ex.getMessage());
+        }  catch (JOSEException ex) {
+            log.error("ParseException: Error creating signed assertion: {}", ex.getMessage());
+        }
+        log.info("Leaving getSignedAssertion");
+
+        return signedAssertion;
+    }
+
+    private String getSignedAssertionServerInitiated(String clientId, String sub, String issuer, String carrierAuthEndpoint, String clientKeyPairs, String keyPair) {
+        log.info("Entering getSignedAssertionServerInitiated");
+
+        AuthorizationVerificationBody authVerificationBody = createAuthorizationVerificationBody(clientId, sub, carrierAuthEndpoint);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        JSONObject parseKeyPairs = null;
+        try {
+            parseKeyPairs = JSONObjectUtils.parse(clientKeyPairs);
+        } catch (ParseException ex) {
+            String returnedMessage = String.format("JSONProcessingException: Error converting AssertionBody to JSON string: %s", ex.getMessage());
+            log.error(returnedMessage);
+        }
+        Object signingKey = parseKeyPairs.get(clientId);
+        log.info("===> signingKey: " + signingKey);
+
+        // String jwtKeyId = clientId + ".1623943437897";
+        String jwtKeyId = signingKey == null ? "" : signingKey.toString();
+
+        JwtHeaderAssertion jwtHeaderAssertion = createJwtHeaderAssertion(jwtKeyId);
+
+        String jwtHeaderAssertionJsonStrng = null;
+        String assertionBodyJsonString = null;
+        // Convert Java POJO JwtHeaderAssertion object to JSON string
+        // Convert Java POJO AssertionBody object to JSON string
+        try {
+            jwtHeaderAssertionJsonStrng = mapper.writeValueAsString(jwtHeaderAssertion);
+            assertionBodyJsonString = mapper.writeValueAsString(authVerificationBody);
+        } catch (JsonProcessingException ex) {
+            String returnedMessage = String.format("JSONProcessingException: Error converting AssertionBody to JSON string: %s", ex.getMessage());
+            log.error(returnedMessage);
         }
         log.info("JwtHeaderAssertion JSON string: {}", jwtHeaderAssertionJsonStrng);
         log.info("AssertionBody JSON string: {}", assertionBodyJsonString);
@@ -509,6 +644,71 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         log.info("Leaving getUserInfo");
 
         return body;
+    }
+
+    private AuthorizationVerificationBody createAuthorizationVerificationBody(String clientId, String sub, String carrierAuthEndpoint) {
+
+        AuthorizationVerificationBody authVerificationBody = new AuthorizationVerificationBody();
+
+        authVerificationBody.setBaseUrl(carrierAuthEndpoint);
+        authVerificationBody.setNotificationUri("/si_callback");
+        authVerificationBody.setClientId(clientId);
+        authVerificationBody.setSub(clientId);
+        authVerificationBody.setIss(clientId);
+        authVerificationBody.setIat((int)(new Date().getTime()));
+        authVerificationBody.setExp((int)(new Date().getTime() + 300));
+        authVerificationBody.setExpiresIn(1500);
+        authVerificationBody.setResponseType("async_token");
+        authVerificationBody.setHeaderType("application_json");
+
+        authVerificationBody.setLoginHint(sub);
+        authVerificationBody.setScope("openid");
+        authVerificationBody.setAcrValues("a3");
+
+        return authVerificationBody;
+    }
+
+    private ServerInitiatedRequestBody createServerInitiatedRequestBody(String clientId, String sub, String issuer, String serverInitiatedAuthEndpoint, String serverInitiatedCancelEndpoint, String signedAssertion) {
+
+        ServerInitiatedRequestBody serverInitiatedRequestBody = new ServerInitiatedRequestBody();
+
+        serverInitiatedRequestBody.setBaseUrl(serverInitiatedAuthEndpoint);
+        serverInitiatedRequestBody.setNotificationUri("/si_callback");
+        serverInitiatedRequestBody.setClientId(clientId);
+        serverInitiatedRequestBody.setAud(issuer);
+        serverInitiatedRequestBody.setSub(clientId);
+        serverInitiatedRequestBody.setIss(clientId);
+        serverInitiatedRequestBody.setIat((int)(new Date().getTime()));
+        serverInitiatedRequestBody.setExp((int)(new Date().getTime() + 300));
+        serverInitiatedRequestBody.setExpiresIn(1500);
+        serverInitiatedRequestBody.setResponseType("async_token");
+        serverInitiatedRequestBody.setHeaderType("application_json");
+
+        serverInitiatedRequestBody.setLoginHint(sub);
+        serverInitiatedRequestBody.setScope("openid");
+        serverInitiatedRequestBody.setAcrValues("a3");
+
+        serverInitiatedRequestBody.setCarrierAuthEndpoint(serverInitiatedAuthEndpoint);
+        serverInitiatedRequestBody.setCarrierServerInitiatedCancelEndpoint(serverInitiatedCancelEndpoint);
+        serverInitiatedRequestBody.setRequest(signedAssertion);
+
+        return serverInitiatedRequestBody;
+    }
+
+    private String callServerInitiatedRequest(ServerInitiatedRequestBody serverInitiatedRequestBody) {
+
+        String returnedMessage = null;
+
+        HttpEntity<ServerInitiatedRequestBody> body = new HttpEntity<>(serverInitiatedRequestBody);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(serverInitiatedRequestBody.getCarrierAuthEndpoint(), HttpMethod.POST, body,
+                    String.class);
+        } catch (RestClientResponseException ex) {
+
+        }
+
+        return returnedMessage;
     }
 
 }
