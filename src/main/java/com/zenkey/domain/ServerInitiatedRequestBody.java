@@ -35,13 +35,13 @@ public class ServerInitiatedRequestBody {
     private String responseType;
 
     @JsonProperty("header_type")
-    private String headerType;
+    private HeaderTypeEnum headerType;
 
     @JsonProperty("redirect_uri")
     private String redirectUri;
 
     @JsonProperty("correlation_id")
-    private String correlation_id;
+    private String correlationId;
 
     @JsonProperty("client_notification_token")
     private String clientNotificationToken;
@@ -171,11 +171,11 @@ public class ServerInitiatedRequestBody {
         this.responseType = responseType;
     }
 
-    public String getHeaderType() {
+    public HeaderTypeEnum getHeaderType() {
         return headerType;
     }
 
-    public void setHeaderType(String headerType) {
+    public void setHeaderType(HeaderTypeEnum headerType) {
         this.headerType = headerType;
     }
 
@@ -187,12 +187,12 @@ public class ServerInitiatedRequestBody {
         this.redirectUri = redirectUri;
     }
 
-    public String getCorrelation_id() {
-        return correlation_id;
+    public String getCorrelationId() {
+        return correlationId;
     }
 
-    public void setCorrelation_id(String correlation_id) {
-        this.correlation_id = correlation_id;
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
     }
 
     public String getClientNotificationToken() {

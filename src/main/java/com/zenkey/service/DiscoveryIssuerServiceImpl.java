@@ -101,4 +101,31 @@ public class DiscoveryIssuerServiceImpl implements DiscoveryIssuerService {
         return oidcUrlInfo;
     }
 
+    /**
+     * Get value from carrier's OIDC JSON tree for provided key
+     * @param oidcConfig
+     * @param key
+     * @return
+     */
+    public String getOidcValueForKey(String oidcConfig, String key) {
+        log.info("===> Entering getOidcValueForKey");
+
+        JsonNode jsonNode = null;
+        ObjectMapper mapper = new ObjectMapper(new JsonFactory());
+
+        try {
+            jsonNode = mapper.readTree(oidcConfig);
+            log.info("===> Just parsed oidcConfig object into JsonNode tree object");
+        } catch (Exception ex) {
+            log.info("===> Error parsing Oidc config");
+            return null;
+        }
+
+        if (((ObjectNode) jsonNode).get(key) == null) {
+            return null;
+        }
+
+        return ((ObjectNode) jsonNode).get(key).asText();
+    }
+
 }

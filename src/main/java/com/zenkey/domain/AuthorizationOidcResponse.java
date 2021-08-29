@@ -8,6 +8,8 @@ public class AuthorizationOidcResponse {
     private Boolean isCarrier;
     private Boolean isCustomerInfoFound;
     private Boolean isRedirectForAuthorization;
+    private Boolean isServerInitiated;
+    private Boolean isServerInitiatedError;
     private String status;
     private String message;
     private OidcUrlInfo oidcUrlInfo;
@@ -44,6 +46,22 @@ public class AuthorizationOidcResponse {
 
     public void setIsRedirectForAuthorization(Boolean redirectForAuthorization) {
         isRedirectForAuthorization = redirectForAuthorization;
+    }
+
+    public Boolean getIsServerInitiated() {
+        return isServerInitiated;
+    }
+
+    public void setIsServerInitiated(Boolean serverInitiated) {
+        isServerInitiated = serverInitiated;
+    }
+
+    public Boolean getIsServerInitiatedError() {
+        return isServerInitiatedError;
+    }
+
+    public void setIsServerInitiatedError(Boolean serverInitiatedError) {
+        isServerInitiatedError = serverInitiatedError;
     }
 
     public String getStatus() {

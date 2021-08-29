@@ -9,4 +9,6 @@ public interface DiscoveryIssuerService {
 
     OidcUrlInfo buildOidcUrlInfo(String oidcConfig);
 
+    String getOidcValueForKey(String oidcConfig, String key);
+
 }
