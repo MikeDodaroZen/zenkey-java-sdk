@@ -41,6 +41,8 @@ public class AbstractAuthorizationHandlerImpl {
     protected static final String CARRIER_AUTH_ENDPOINT = "carrier_auth_endpoint";
     protected static final String TOKEN_ENDPOINT = "token_endpoint";
     protected static final String USERINFO_ENDPOINT = "userinfo_endpoint";
+    protected static final String OPTIMIZED_DISCOVERY_URL = "https://auth.myzenkey.com/v1/auth";
+    protected static final String MNO_STATE_VALUE = "login";
 
     protected AuthorizationOidcResponse constructAuthorizationOidcResponse(Boolean isSuccess, String message, String sub) {
 

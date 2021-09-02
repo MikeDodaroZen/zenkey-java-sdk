@@ -25,6 +25,8 @@ import org.springframework.web.client.RestTemplate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -48,7 +50,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @return
      */
     public AuthorizationOidcResponse getAuthorization(String clientId, String mccmnc, String loginHintToken, String redirectUri) {
-        log.info("===> Calling");
+        log.info("===> Calling getAuthorization");
         log.info("===> loginTokenHint: {}", loginHintToken );
         log.info("===> mccmnc: {}", mccmnc);
 
@@ -56,6 +58,69 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
 
         if (mccmnc == null || mccmnc.trim().length() == 0) {
             return constructAuthorizationOidcResponse(false, "Authorization failed.  Carrier was not found", AuthorizationStatus.FAILED.name(), null, false);
+        }
+        if (loginHintToken == null || loginHintToken.trim().length() == 0) {
+            return constructAuthorizationOidcResponse(false, "Authorization failed.  A login hint token is required for authorization", AuthorizationStatus.FAILED.name(), null, false);
+        }
+
+        log.info("===> Creating new DiscoveryIssuerServiceImpl object");
+        DiscoveryIssuerService discoveryIssuerService = new DiscoveryIssuerServiceImpl();
+        ResponseEntity<String> responseEntityAuth = null;
+        log.info("===> About to get authorization response");
+        try {
+            responseEntityAuth = discoveryIssuerService.callDiscoveryIssuerService(clientId, mccmnc, null, null);
+            log.info("===> Successfully got authorization response");
+            log.info("======================= Completed Step 1 or 3 - Discovery Issuer:  Received OIDC Config");
+        }  catch (Exception ex) {
+            String returnMessage = String.format("Authorization Failed: %s", ex.getMessage());
+            log.error(returnMessage);
+            return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
+        }
+        log.info("===> Authorization response is {}", responseEntityAuth.getBody());
+
+        if (responseEntityAuth.getBody() == null) {
+            String parseAuthorizationUrlError = "Not able to parse authorization URL from Oidc config";
+            log.error(parseAuthorizationUrlError);
+            return constructAuthorizationOidcResponse(false, parseAuthorizationUrlError, AuthorizationStatus.FAILED.name(), null);
+        }
+
+        OidcUrlInfo oidcUrlInfo = discoveryIssuerService.buildOidcUrlInfo(responseEntityAuth.getBody());
+        if (oidcUrlInfo == null) {
+            return constructAuthorizationOidcResponse(false, "Error parsing authorization URL from Oidc config", AuthorizationStatus.FAILED.name(), null);
+        } else {
+            log.info("===> OidcUrlInfo: " + oidcUrlInfo.toString());
+
+            String redirectForAuthorizationMessage = "Redirect for authorization";
+            return constructAuthorizationOidcResponse(false, "Returning OIDC Url Info", AuthorizationStatus.SUCCESSFUL.name(), null, true, true, oidcUrlInfo);
+        }
+    }
+
+    /**
+     * Attempt or re-attempt discovery-issuer.
+     * @param clientId
+     * @param mccmnc
+     * @param loginHintToken
+     * @param redirectUri
+     * @param scopes
+     * @return
+     */
+    public AuthorizationOidcResponse getAuthorizationOptimized(String clientId, String mccmnc, String loginHintToken, String redirectUri, List scopes) {
+        log.info("===> Calling getAuthorizationOptimized");
+        log.info("===> loginTokenHint: {}", loginHintToken );
+        log.info("===> mccmnc: {}", mccmnc);
+
+        AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
+
+        if (mccmnc == null || mccmnc.trim().length() == 0) {
+            String redirectBackToCustomerAppUrl = null;
+            try {
+                redirectBackToCustomerAppUrl = buildOptimizedDiscoveryRedirectUrl(scopes, redirectUri, clientId);
+            } catch (Exception ex) {
+                return constructAuthorizationOidcResponse(false, String.format("Error creating redirect URL back to customer's app: %s", ex.getMessage()), AuthorizationStatus.FAILED.name(), null);
+            }
+            JsonNode jsonNode = buildJsonNodeForOptimizedDiscoveryRedirectUrl(redirectBackToCustomerAppUrl);
+            log.info("jsonNode: {}", jsonNode);
+            return constructAuthorizationOidcResponse(false, "Authorization failed.  Carrier was not found", AuthorizationStatus.FAILED.name(), jsonNode, false);
         }
         if (loginHintToken == null || loginHintToken.trim().length() == 0) {
             return constructAuthorizationOidcResponse(false, "Authorization failed.  A login hint token is required for authorization", AuthorizationStatus.FAILED.name(), null, false);
@@ -911,6 +976,52 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         log.info("Leaving callServerInitiatedRequest");
 
         return returnedMessage;
+    }
+
+    private String buildOptimizedDiscoveryRedirectUrl(List<String> scopes, String redirectUrl,  String clientId) throws Exception {
+        UriComponents urlComponent = null;
+        try {
+            urlComponent = UriComponentsBuilder.newInstance()
+                    .fromHttpUrl(OPTIMIZED_DISCOVERY_URL)
+                    .queryParam("redirect_uri", redirectUrl)
+                    .queryParam("client_id", clientId)
+                    .queryParam("state", MNO_STATE_VALUE)
+                    .queryParam("scope", URLEncoder.encode(convertListToSpaceDelimitedString(scopes), "UTF-8"))
+                    .build().encode();
+            log.info("===> Encoded Optimized Discovery Redirect URL: {}", urlComponent.toString());
+        } catch (Exception ex) {
+            String message = String.format("Error building encoded optimized discovery redirect URL: %s", ex.getMessage());
+            log.error(message, ex);
+            throw new Exception(message);
+        }
+
+        return urlComponent.toString();
+    }
+
+    private String convertListToSpaceDelimitedString(List<String> list) {
+
+        String joinedString = String.join(" ", list);
+        log.info("joinedString: {}", joinedString);
+        return joinedString;
+    }
+
+    private JsonNode buildJsonNodeForOptimizedDiscoveryRedirectUrl(String optimizedRedirectUrl) {
+
+        log.info("Entering buildJsonNodeForOptimizedDiscoveryRedirectUrl");
+        JsonNode jsonNode = null;
+        ObjectMapper mapper = new ObjectMapper(new JsonFactory());
+
+        org.json.JSONObject jo = new org.json.JSONObject();
+        jo.put("optimized_discovery_url", optimizedRedirectUrl);
+        log.info("JSON Object: {}", jo.toString());
+        try {
+            jsonNode = mapper.readTree(jo.toString());
+        } catch (Exception ex) {
+            log.error("Error creating JSON object with optimized redirect URL");
+        }
+        log.info("JSON Node: {}", jsonNode.toString());
+        log.info("Leaving buildJsonNodeForOptimizedDiscoveryRedirectUrl");
+        return jsonNode;
     }
 
 }
