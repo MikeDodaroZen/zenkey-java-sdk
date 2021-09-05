@@ -104,9 +104,8 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @param scopes
      * @return
      */
-    public AuthorizationOidcResponse getAuthorizationOptimized(String clientId, String mccmnc, String loginHintToken, String redirectUri, List scopes) {
+    public AuthorizationOidcResponse getAuthorizationOptimized(String clientId, String mccmnc, String redirectUri, List scopes) {
         log.info("===> Calling getAuthorizationOptimized");
-        log.info("===> loginTokenHint: {}", loginHintToken );
         log.info("===> mccmnc: {}", mccmnc);
 
         AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
@@ -121,9 +120,6 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
             JsonNode jsonNode = buildJsonNodeForOptimizedDiscoveryRedirectUrl(redirectBackToCustomerAppUrl);
             log.info("jsonNode: {}", jsonNode);
             return constructAuthorizationOidcResponse(false, "Authorization failed.  Carrier was not found", AuthorizationStatus.FAILED.name(), jsonNode, false);
-        }
-        if (loginHintToken == null || loginHintToken.trim().length() == 0) {
-            return constructAuthorizationOidcResponse(false, "Authorization failed.  A login hint token is required for authorization", AuthorizationStatus.FAILED.name(), null, false);
         }
 
         log.info("===> Creating new DiscoveryIssuerServiceImpl object");
