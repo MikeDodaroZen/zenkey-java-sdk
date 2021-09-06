@@ -1,11 +1,19 @@
 package com.zenkey.service;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zenkey.domain.AuthorizationOidcResponse;
 import com.zenkey.domain.AuthorizationStatus;
 import com.zenkey.domain.OidcUrlInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class AbstractAuthorizationHandlerImpl {
+
+    protected static final Logger log = LoggerFactory.getLogger(AuthorizationHandlerImpl.class);
 
     protected static final String RESPONSE_TYPE = "response_type";
     protected static final String HEADER_TYPE = "header_type";
@@ -146,6 +154,32 @@ public class AbstractAuthorizationHandlerImpl {
         }
 
         return authorizationOidcResponse;
+    }
+
+    protected String convertListToSpaceDelimitedString(List<String> list) {
+
+        String joinedString = String.join(" ", list);
+        log.info("joinedString: {}", joinedString);
+        return joinedString;
+    }
+
+    protected JsonNode buildJsonNodeForOptimizedDiscoveryRedirectUrl(String optimizedRedirectUrl) {
+
+        log.info("Entering buildJsonNodeForOptimizedDiscoveryRedirectUrl");
+        JsonNode jsonNode = null;
+        ObjectMapper mapper = new ObjectMapper(new JsonFactory());
+
+        org.json.JSONObject jo = new org.json.JSONObject();
+        jo.put("optimized_discovery_url", optimizedRedirectUrl);
+        log.info("JSON Object: {}", jo.toString());
+        try {
+            jsonNode = mapper.readTree(jo.toString());
+        } catch (Exception ex) {
+            log.error("Error creating JSON object with optimized redirect URL");
+        }
+        log.info("JSON Node: {}", jsonNode.toString());
+        log.info("Leaving buildJsonNodeForOptimizedDiscoveryRedirectUrl");
+        return jsonNode;
     }
 }
 

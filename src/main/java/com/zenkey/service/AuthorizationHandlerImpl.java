@@ -37,12 +37,12 @@ import java.util.*;
 
 public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl implements AuthorizationHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(AuthorizationHandlerImpl.class);
-
     RestTemplate restTemplate = new RestTemplate();
 
     /**
-     * Attempt or re-attempt discovery-issuer.
+     * Attempt or re-attempt discovery-issuer, which requires known carrier.  Ultimately, should return an authorization code based
+     * on successful call to carriers authorization endpoint.  The carrier is usually determined during discovery ui, which is usually a
+     * prerequisite of this method.
      * @param clientId
      * @param mccmnc
      * @param loginHintToken
@@ -96,10 +96,11 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
     }
 
     /**
-     * Attempt or re-attempt discovery-issuer.
+     * Attempt or re-attempt discovery-issuer, which requires known carrier.  Ultimately, should return an authorization code based
+     * on successful call to carriers authorization endpoint.  The carrier is usually determined during discovery ui, which is usually a
+     * prerequisite of this method.
      * @param clientId
      * @param mccmnc
-     * @param loginHintToken
      * @param redirectUri
      * @param scopes
      * @return
@@ -154,6 +155,17 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }
     }
 
+    /**
+     *
+     * @param clientId
+     * @param tokenEndPoint
+     * @param userInfoEndpoint
+     * @param mccmnc
+     * @param code
+     * @param clientKeyPairs
+     * @param keyPair
+     * @return
+     */
     public AuthorizationOidcResponse getAuthorizationToken(String clientId, String tokenEndPoint, String userInfoEndpoint, String mccmnc, String code, String clientKeyPairs, String keyPair) {
         log.info("Entering getAuthorizationToken");
         AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
@@ -414,6 +426,20 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return constructAuthorizationOidcResponse(true, "Server-Initiated Request Was Successful", AuthorizationStatus.SUCCESSFUL.name(), null);
     }
 
+    /**
+     * First, an unsigned assertion is created followed by the signing of the assertion using the NimbusDS (JOSE) dependency.  The assertion is
+     * composed of two portions: a header and body.  The body is composed of the AssertionBody object.  The header is composed of the
+     * JwtHeaderAssertion object.  The two portions are delimited by a dot (".").  Before the signing of the assertion, it is first BASE64
+     * encoded, followed by regular javascript-like encoding.
+     * @param clientId
+     * @param tokenEndpoint
+     * @param mccmnc
+     * @param code
+     * @param clientKeyPairs
+     * @param keyPair
+     * @return
+     * @throws Exception
+     */
     private String getSignedAssertion(String clientId, String tokenEndpoint, String mccmnc, String code, String clientKeyPairs, String keyPair) throws Exception {
         log.info("Entering getSignedAssertion: tokenEndpoint: {}", tokenEndpoint);
 
@@ -543,6 +569,14 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return signedAssertion;
     }
 
+    /**
+     * Creates a TokenRequestBody that is used in the body of the request of the carrier's POST token endpoint.
+     * @param clientId
+     * @param mccmnc
+     * @param signedAssertion
+     * @param code
+     * @return
+     */
     private TokenRequestBody createTokenRequestBody(String clientId, String mccmnc, String signedAssertion, String code) {
         log.info("Entering createTokenRequestBody");
 
@@ -559,6 +593,12 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return tokenRequestBody;
     }
 
+    /**
+     * Creates the assertion from the header and body portions, and does encoding, including Base64 and regular encoding.
+     * @param tokenHead
+     * @param tokenBody
+     * @return
+     */
     private String createUnsignedJwt(String tokenHead, String tokenBody) {
         log.info("Entering createUnsignedJwt");
         String headString = encodeTokenString(tokenHead);
@@ -582,6 +622,11 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return encodeURILikeJavascript(replacedEncodedTokenString);
     }
 
+    /**
+     * Creates header portion of assertion
+     * @param jwtKeyId
+     * @return
+     */
     private JwtHeaderAssertion createJwtHeaderAssertion(String jwtKeyId) {
         log.info("Entering createJwtHeaderAssertion");
         JwtHeaderAssertion jwtHeaderAssertion = new JwtHeaderAssertion();
@@ -618,10 +663,12 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
     }
 
     /**
-     * Takes the unsigned client assertion and signs it returning a signed assertion.  This relies heavily
-     * on the nimbusds dependency, which is a popular Java and Android library for JSON Web Tokens (JWT).
+     * Takes the unsigned client assertion and signs it returning a provided signed assertion.  This relies heavily
+     * on the nimbusds (JOSE) dependency, which is a popular Java and Android library for JSON Web Tokens (JWT).
      * @param jwtToken
      * @param clientId
+     * @param clientKeyPairs
+     * @param keyPair
      * @return
      * @throws ParseException
      * @throws JOSEException
@@ -832,6 +879,13 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return body;
     }
 
+    /**
+     * Creates AuthorizationVerificationBody for server-initiated request
+     * @param clientId
+     * @param sub
+     * @param carrierAuthEndpoint
+     * @return
+     */
     private AuthorizationVerificationBody createAuthorizationVerificationBody(String clientId, String sub, String carrierAuthEndpoint) {
 
         AuthorizationVerificationBody authVerificationBody = new AuthorizationVerificationBody();
@@ -992,32 +1046,6 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }
 
         return urlComponent.toString();
-    }
-
-    private String convertListToSpaceDelimitedString(List<String> list) {
-
-        String joinedString = String.join(" ", list);
-        log.info("joinedString: {}", joinedString);
-        return joinedString;
-    }
-
-    private JsonNode buildJsonNodeForOptimizedDiscoveryRedirectUrl(String optimizedRedirectUrl) {
-
-        log.info("Entering buildJsonNodeForOptimizedDiscoveryRedirectUrl");
-        JsonNode jsonNode = null;
-        ObjectMapper mapper = new ObjectMapper(new JsonFactory());
-
-        org.json.JSONObject jo = new org.json.JSONObject();
-        jo.put("optimized_discovery_url", optimizedRedirectUrl);
-        log.info("JSON Object: {}", jo.toString());
-        try {
-            jsonNode = mapper.readTree(jo.toString());
-        } catch (Exception ex) {
-            log.error("Error creating JSON object with optimized redirect URL");
-        }
-        log.info("JSON Node: {}", jsonNode.toString());
-        log.info("Leaving buildJsonNodeForOptimizedDiscoveryRedirectUrl");
-        return jsonNode;
     }
 
 }
