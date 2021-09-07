@@ -49,6 +49,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @param redirectUri
      * @return
      */
+    @Deprecated
     public AuthorizationOidcResponse getAuthorization(String clientId, String mccmnc, String loginHintToken, String redirectUri) {
         log.info("===> Calling getAuthorization");
         log.info("===> loginTokenHint: {}", loginHintToken );
@@ -166,6 +167,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @param keyPair
      * @return
      */
+    @Deprecated
     public AuthorizationOidcResponse getAuthorizationToken(String clientId, String tokenEndPoint, String userInfoEndpoint, String mccmnc, String code, String clientKeyPairs, String keyPair) {
         log.info("Entering getAuthorizationToken");
         AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
