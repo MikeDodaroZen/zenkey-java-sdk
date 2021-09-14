@@ -15,8 +15,11 @@ public class AbstractAuthorizationHandlerImpl {
 
     protected static final Logger log = LoggerFactory.getLogger(AuthorizationHandlerImpl.class);
 
+    protected static final String BASE_URL = "baseUrl";
     protected static final String RESPONSE_TYPE = "response_type";
+    protected static final String ASYNC_TOKEN = "async_token";
     protected static final String HEADER_TYPE = "header_type";
+    protected static final String HEADER_TYPE_APPLICATION_JSON = "application_json";
     protected static final String REDIRECT_URI = "redirect_uri";
     protected static final String NOTIFICATION_URI = "notification_uri";
     protected static final String IAT = "iat";
@@ -25,10 +28,13 @@ public class AbstractAuthorizationHandlerImpl {
     protected static final String ISS = "iss";
     protected static final String AUD = "aud";
     protected static final String EXPIRES_IN = "expires_in";
+    protected static final int EXPIRES_IN_VALUE = 3000;
     protected static final String SCOPE = "scope";
+    protected static final String SCOPE_OPENID = "openid";
     protected static final String CORRELATION_ID = "correlation_id";
     protected static final String CLIENT_ID = "client_id";
     protected static final String ACR_VALUES = "acr_values";
+    protected static final String ACR_VALUES_A3 = "a3";
     protected static final String CLIENT_NOTIFICATION_TOKEN = "client_notification_token";
     protected static final String LOGIN_HINT = "login_hint";
     protected static final String LOGIN_HINT_TOKEN = "login_hint_token";

@@ -14,10 +14,10 @@ public class ServerInitiatedRequestBody {
     private String sub;
 
     @JsonProperty("iat")
-    private int iat;
+    private long iat;
 
     @JsonProperty("exp")
-    private int exp;
+    private long exp;
 
     @JsonProperty("iss")
     private String iss;
@@ -115,19 +115,19 @@ public class ServerInitiatedRequestBody {
         this.sub = sub;
     }
 
-    public int getIat() {
+    public long getIat() {
         return iat;
     }
 
-    public void setIat(int iat) {
+    public void setIat(long iat) {
         this.iat = iat;
     }
 
-    public int getExp() {
+    public long getExp() {
         return exp;
     }
 
-    public void setExp(int exp) {
+    public void setExp(long exp) {
         this.exp = exp;
     }
 

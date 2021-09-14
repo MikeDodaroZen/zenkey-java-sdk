@@ -404,8 +404,19 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         String signedAssertion = "";
         String tokenResponse = "";
 
+        String redirectUri = "http://localhost:4200";
+        String correlationId = UUID.randomUUID().toString();
+
+        int iat = (int)(new Date().getTime() / 1000);
+        int exp = (int)(new Date().getTime() / 1000) + 3000;
+
+        log.info("iat: {}", iat);
+        log.info("iat String valueOf: {}", String.valueOf(iat));
+        log.info("exp: {}", exp);
+        log.info("exp String valueOf: {}", String.valueOf(exp));
+
         try {
-            signedAssertion = getSignedAssertionServerInitiated(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), clientKeyPairs, keyPair);
+            signedAssertion = getSignedAssertionServerInitiated(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), clientKeyPairs, keyPair, redirectUri, correlationId, iat, exp);
         } catch (Exception ex) {
             String returnMessage = String.format("===> Get Authorization Token Failed: %s", ex.getMessage());
             log.error(returnMessage);
@@ -413,12 +424,12 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }
         log.info("Got signed assertion");
 
-        ServerInitiatedRequestBody serverInitiatedRequestBody = createServerInitiatedRequestBody(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), oidcUrlInfo.getServerInitiatedCancelEndpoint(), signedAssertion);
+        ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody = createServerInitiatedRequestBody(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), oidcUrlInfo.getServerInitiatedCancelEndpoint(), signedAssertion, redirectUri, correlationId, iat, exp);
         log.info("Created ServerInitiatedRequestBody");
 
         String returnedMessage = null;
         try {
-            returnedMessage = callServerInitiatedRequest(serverInitiatedRequestBody);
+            returnedMessage = callServerInitiatedRequest(serverInitiatedFlowRequestBody);
         } catch (Exception ex) {
             String returnMessage = String.format("===> Exception doing server-initiated request: %s", ex.getMessage());
             log.error(returnMessage);
@@ -471,7 +482,6 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         Object signingKey = parseKeyPairs.get(clientId);
         log.info("===> signingKey: " + signingKey);
 
-        // String jwtKeyId = clientId + ".1623943437897";
         String jwtKeyId = signingKey == null ? "" : signingKey.toString();
 
         JwtHeaderAssertion jwtHeaderAssertion = createJwtHeaderAssertion(jwtKeyId);
@@ -512,10 +522,10 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return signedAssertion;
     }
 
-    private String getSignedAssertionServerInitiated(String clientId, String sub, String issuer, String carrierAuthEndpoint, String clientKeyPairs, String keyPair) throws Exception {
+    private String getSignedAssertionServerInitiated(String clientId, String sub, String issuer, String carrierAuthEndpoint, String clientKeyPairs, String keyPair, String redirectUri, String correlationId, int iat, int exp) throws Exception {
         log.info("Entering getSignedAssertionServerInitiated");
 
-        AuthorizationVerificationBody authVerificationBody = createAuthorizationVerificationBody(clientId, sub, carrierAuthEndpoint);
+        AuthorizationVerificationBody authVerificationBody = createAuthorizationVerificationBody(clientId, sub, carrierAuthEndpoint, issuer, redirectUri, correlationId, iat, exp);
 
         ObjectMapper mapper = new ObjectMapper();
 
@@ -534,6 +544,17 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         String jwtKeyId = signingKey == null ? "" : signingKey.toString();
 
         JwtHeaderAssertion jwtHeaderAssertion = createJwtHeaderAssertion(jwtKeyId);
+
+        /**
+         * Play with JwsHeader
+         */
+        log.info("About to play with JWSHeader");
+        JWSHeader jwsHeader = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(jwtKeyId).type(JOSEObjectType.JWT).build();
+        log.info("JWSHeader toString: {}", jwsHeader.toString());
+        log.info("JWSHeader JSON Object JSON String: {}", jwsHeader.toJSONObject().toJSONString());
+        log.info("JWSHeader JSON Object String: {}", jwsHeader.toJSONObject().toString());
+
+        //-------------------------------------------
 
         String jwtHeaderAssertionJsonStrng = null;
         String assertionBodyJsonString = null;
@@ -888,57 +909,86 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @param carrierAuthEndpoint
      * @return
      */
-    private AuthorizationVerificationBody createAuthorizationVerificationBody(String clientId, String sub, String carrierAuthEndpoint) {
+    private AuthorizationVerificationBody createAuthorizationVerificationBody(String clientId, String sub, String carrierAuthEndpoint, String issuer, String redirectUri, String correlationId, int iat, int exp) {
 
         AuthorizationVerificationBody authVerificationBody = new AuthorizationVerificationBody();
 
         authVerificationBody.setBaseUrl(carrierAuthEndpoint);
-        authVerificationBody.setNotificationUri("/si_callback");
+        authVerificationBody.setRedirectUri(redirectUri);
+        authVerificationBody.setCorrelation_id(correlationId);
+        authVerificationBody.setAud(issuer);
+        authVerificationBody.setNotificationUri("http://192.168.1.159:8094/dashboard/si_callback");
         authVerificationBody.setClientId(clientId);
         authVerificationBody.setSub(clientId);
         authVerificationBody.setIss(clientId);
-        authVerificationBody.setIat((int)(new Date().getTime()));
-        authVerificationBody.setExp((int)(new Date().getTime() + 300));
-        authVerificationBody.setExpiresIn(1500);
-        authVerificationBody.setResponseType("async_token");
-        authVerificationBody.setHeaderType("application_json");
+        authVerificationBody.setIat(iat);
+        authVerificationBody.setExp(exp);
+        authVerificationBody.setExpiresIn(EXPIRES_IN_VALUE);
+        authVerificationBody.setResponseType(ASYNC_TOKEN);
+        authVerificationBody.setHeaderType(HEADER_TYPE_APPLICATION_JSON);
 
         authVerificationBody.setLoginHint(sub);
         authVerificationBody.setScope("openid");
-        authVerificationBody.setAcrValues("a3");
+        authVerificationBody.setAcrValues(ACR_VALUES_A3);
 
         return authVerificationBody;
     }
 
-    private ServerInitiatedRequestBody createServerInitiatedRequestBody(String clientId, String sub, String issuer, String serverInitiatedAuthEndpoint, String serverInitiatedCancelEndpoint, String signedAssertion) {
+    private ServerInitiatedFlowRequestBody createServerInitiatedRequestBody(String clientId, String sub, String issuer, String serverInitiatedAuthEndpoint, String serverInitiatedCancelEndpoint, String signedAssertion, String redirectUri, String correlationId, int iat, int exp) {
 
+        ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody = new ServerInitiatedFlowRequestBody();
+
+        serverInitiatedFlowRequestBody.setBaseUrl(serverInitiatedAuthEndpoint);
+        serverInitiatedFlowRequestBody.setNotificationUri("http://localhost:8094/dashboard/si_callback");
+        serverInitiatedFlowRequestBody.setRedirectUri(redirectUri);
+        serverInitiatedFlowRequestBody.setClientId(clientId);
+        serverInitiatedFlowRequestBody.setAud(issuer);
+        serverInitiatedFlowRequestBody.setSub(clientId);
+        serverInitiatedFlowRequestBody.setIss(clientId);
+        serverInitiatedFlowRequestBody.setIat(String.valueOf(iat));
+        serverInitiatedFlowRequestBody.setExp(String.valueOf(exp));
+        serverInitiatedFlowRequestBody.setExpiresIn(String.valueOf(EXPIRES_IN_VALUE));
+        serverInitiatedFlowRequestBody.setResponseType(ServerInitiatedFlowRequestBody.ResponseTypeEnum.ASYNC_TOKEN);
+        serverInitiatedFlowRequestBody.setHeaderType(ServerInitiatedFlowRequestBody.HeaderTypeEnum.APPLICATION_JSON);
+
+        serverInitiatedFlowRequestBody.setLoginHint(sub);
+        serverInitiatedFlowRequestBody.setScope(SCOPE_OPENID);
+        serverInitiatedFlowRequestBody.setAcrValues(ACR_VALUES_A3);
+
+        serverInitiatedFlowRequestBody.setCarrierAuthEndpoint(serverInitiatedAuthEndpoint);
+        serverInitiatedFlowRequestBody.setCorrelationId(correlationId);
+        // serverInitiatedFlowRequestBody.setCarrierServerInitiatedCancelEndpoint(serverInitiatedCancelEndpoint);
+        serverInitiatedFlowRequestBody.setRequest(signedAssertion);
+
+        /*
         ServerInitiatedRequestBody serverInitiatedRequestBody = new ServerInitiatedRequestBody();
 
         serverInitiatedRequestBody.setBaseUrl(serverInitiatedAuthEndpoint);
-        serverInitiatedRequestBody.setNotificationUri("/si_callback");
+        serverInitiatedRequestBody.setNotificationUri("http://192.168.1.159:8094/dashboard/si_callback");
         serverInitiatedRequestBody.setClientId(clientId);
         serverInitiatedRequestBody.setAud(issuer);
         serverInitiatedRequestBody.setSub(clientId);
         serverInitiatedRequestBody.setIss(clientId);
         serverInitiatedRequestBody.setIat((int)(new Date().getTime()));
-        serverInitiatedRequestBody.setExp((int)(new Date().getTime() + 300));
-        serverInitiatedRequestBody.setExpiresIn(1500);
-        serverInitiatedRequestBody.setResponseType("async_token");
+        serverInitiatedRequestBody.setExp((int)(new Date().getTime() + 3000));
+        serverInitiatedRequestBody.setExpiresIn(3000);
+        serverInitiatedRequestBody.setResponseType(ASYNC_TOKEN);
         serverInitiatedRequestBody.setHeaderType(HeaderTypeEnum.APPLICATION_JSON);
 
         serverInitiatedRequestBody.setLoginHint(sub);
-        serverInitiatedRequestBody.setScope("openid");
-        serverInitiatedRequestBody.setAcrValues("a3");
+        serverInitiatedRequestBody.setScope(SCOPE_OPENID);
+        serverInitiatedRequestBody.setAcrValues(ACR_VALUES_A3);
 
         serverInitiatedRequestBody.setCarrierAuthEndpoint(serverInitiatedAuthEndpoint);
         serverInitiatedRequestBody.setCarrierServerInitiatedCancelEndpoint(serverInitiatedCancelEndpoint);
         serverInitiatedRequestBody.setRequest(signedAssertion);
+        */
 
-        return serverInitiatedRequestBody;
+        return serverInitiatedFlowRequestBody;
     }
 
-    public void addToRequestIfPresent(HeaderTypeEnum headerType, String fieldName, String getFieldData, org.json.JSONObject requestBody, MultiValueMap<String, String> map) {
-        if(headerType.equals(HeaderTypeEnum.X_WWW_FORM_URLENCODED)) {
+    public void addToRequestIfPresent(ServerInitiatedFlowRequestBody.HeaderTypeEnum headerType, String fieldName, String getFieldData, org.json.JSONObject requestBody, MultiValueMap<String, String> map) {
+        if(headerType.equals(ServerInitiatedFlowRequestBody.HeaderTypeEnum.X_WWW_FORM_URLENCODED)) {
             if(getFieldData != null && !getFieldData.trim().isEmpty()) {
                 map.add(fieldName, getFieldData);
             }
@@ -949,36 +999,41 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }
     }
 
-    public HttpEntity<String> buildJSONRequest(ServerInitiatedRequestBody serverInitiatedRequestBody){
+    public HttpEntity<String> buildJSONRequest(ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody){
+        log.info("String representation of response_type: {}", serverInitiatedFlowRequestBody.getResponseType().name());
+        log.info("String representation of response_type: {}", serverInitiatedFlowRequestBody.getResponseType().toString());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("Accept", MediaType.APPLICATION_JSON_VALUE);
 
         org.json.JSONObject requestBody = new org.json.JSONObject()
-                .put(RESPONSE_TYPE, serverInitiatedRequestBody.getResponseType())
-                .put(REDIRECT_URI, serverInitiatedRequestBody.getRedirectUri())
-                .put(NOTIFICATION_URI, serverInitiatedRequestBody.getNotificationUri())
-                .put(IAT, serverInitiatedRequestBody.getIat())
-                .put(SUB, serverInitiatedRequestBody.getSub())
-                .put(EXP, serverInitiatedRequestBody.getExp())
-                .put(ISS, serverInitiatedRequestBody.getIss())
-                .put(AUD, serverInitiatedRequestBody.getAud())
-                .put(EXPIRES_IN, serverInitiatedRequestBody.getExpiresIn())
-                .put(SCOPE, serverInitiatedRequestBody.getScope())
-                .put(CORRELATION_ID, serverInitiatedRequestBody.getCorrelationId())
-                .put(CLIENT_ID, serverInitiatedRequestBody.getClientId())
-                .put(ACR_VALUES, serverInitiatedRequestBody.getAcrValues())
-                .put(REQUEST, serverInitiatedRequestBody.getRequest());
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), CLIENT_NOTIFICATION_TOKEN, serverInitiatedRequestBody.getClientNotificationToken(), requestBody, null);
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), LOGIN_HINT, serverInitiatedRequestBody.getLoginHint(), requestBody, null);
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), LOGIN_HINT_TOKEN, serverInitiatedRequestBody.getLoginHintToken(), requestBody, null);
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), STATE, serverInitiatedRequestBody.getState(), requestBody, null);
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), CONTEXT, serverInitiatedRequestBody.getContext(), requestBody, null);
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), NONCE, serverInitiatedRequestBody.getNonce(), requestBody, null);
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), JTI, serverInitiatedRequestBody.getJti(), requestBody, null);
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), SDK_VERSION, serverInitiatedRequestBody.getSdkVersion(), requestBody, null);
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), OPTIONS, serverInitiatedRequestBody.getOptions(), requestBody, null);
-        addToRequestIfPresent(serverInitiatedRequestBody.getHeaderType(), REFERRED_BINDING, serverInitiatedRequestBody.getReferredBinding(), requestBody, null);
+                .put(BASE_URL, serverInitiatedFlowRequestBody.getBaseUrl())
+                .put(RESPONSE_TYPE, serverInitiatedFlowRequestBody.getResponseType().toString())
+                // .put(RESPONSE_TYPE, serverInitiatedFlowRequestBody.getResponseType().name())
+                .put(REDIRECT_URI, serverInitiatedFlowRequestBody.getRedirectUri())
+                .put(NOTIFICATION_URI, serverInitiatedFlowRequestBody.getNotificationUri())
+                .put(IAT, Long.valueOf(serverInitiatedFlowRequestBody.getIat()))
+                .put(SUB, serverInitiatedFlowRequestBody.getSub())
+                .put(EXP, Long.valueOf(serverInitiatedFlowRequestBody.getExp()))
+                .put(ISS, serverInitiatedFlowRequestBody.getIss())
+                .put(AUD, serverInitiatedFlowRequestBody.getAud())
+                .put(EXPIRES_IN, Integer.valueOf(serverInitiatedFlowRequestBody.getExpiresIn()))
+                .put(SCOPE, serverInitiatedFlowRequestBody.getScope())
+                .put(CORRELATION_ID, serverInitiatedFlowRequestBody.getCorrelationId())
+                .put(CLIENT_ID, serverInitiatedFlowRequestBody.getClientId())
+                .put(ACR_VALUES, serverInitiatedFlowRequestBody.getAcrValues())
+                .put(CARRIER_AUTH_ENDPOINT, serverInitiatedFlowRequestBody.getCarrierAuthEndpoint())
+                .put(REQUEST, serverInitiatedFlowRequestBody.getRequest());
+        // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), CLIENT_NOTIFICATION_TOKEN, serverInitiatedFlowRequestBody.getClientNotificationToken(), requestBody, null);
+        addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), LOGIN_HINT, serverInitiatedFlowRequestBody.getLoginHint(), requestBody, null);
+        // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), LOGIN_HINT_TOKEN, serverInitiatedFlowRequestBody.getLoginHintToken(), requestBody, null);
+        // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), STATE, serverInitiatedFlowRequestBody.getState(), requestBody, null);
+        // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), CONTEXT, serverInitiatedFlowRequestBody.getContext(), requestBody, null);
+        // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), NONCE, serverInitiatedFlowRequestBody.getNonce(), requestBody, null);
+        // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), JTI, serverInitiatedFlowRequestBody.getJti(), requestBody, null);
+        // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), SDK_VERSION, serverInitiatedFlowRequestBody.getSdkVersion(), requestBody, null);
+        // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), OPTIONS, serverInitiatedFlowRequestBody.getOptions(), requestBody, null);
+        // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), REFERRED_BINDING, serverInitiatedFlowRequestBody.getReferredBinding(), requestBody, null);
         log.info("Authorize>>Carrier headers: {}", headers);
 
         HttpEntity<String> request = new HttpEntity(requestBody.toString(), headers);
@@ -988,24 +1043,24 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return request;
     }
 
-    private String callServerInitiatedRequest(ServerInitiatedRequestBody serverInitiatedRequestBody) throws Exception {
+    private String callServerInitiatedRequest(ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody) throws Exception {
 
         log.info("Entering callServerInitiatedRequest");
         HttpEntity request = null;
         String returnedMessage = null;
 
-        if(serverInitiatedRequestBody.getHeaderType().equals(HeaderTypeEnum.X_WWW_FORM_URLENCODED)) {
+        if(serverInitiatedFlowRequestBody.getHeaderType().equals(HeaderTypeEnum.X_WWW_FORM_URLENCODED)) {
             // request = buildURLEncodedRequest(serverInitiatedFlowRequestBody);
         } else {
-            request = buildJSONRequest(serverInitiatedRequestBody);
+            request = buildJSONRequest(serverInitiatedFlowRequestBody);
         }
         log.info("Just created HTTPEntity with body for call to carrier's server initiated request");
 
         try {
-            ResponseEntity<String> response = restTemplate.exchange(serverInitiatedRequestBody.getCarrierAuthEndpoint(), HttpMethod.POST, request,
+            ResponseEntity<String> response = restTemplate.exchange(serverInitiatedFlowRequestBody.getCarrierAuthEndpoint(), HttpMethod.POST, request,
                     String.class);
 
-            log.info("Authorize>>Carrier endpoint: {}", serverInitiatedRequestBody.getCarrierAuthEndpoint());
+            log.info("Authorize>>Carrier endpoint: {}", serverInitiatedFlowRequestBody.getCarrierAuthEndpoint());
             log.info("Authorize>>Carrier Body: {}", request);
             log.info("Carrier Response {}", response);
             returnedMessage = response.getBody();
@@ -1013,7 +1068,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         } catch (RestClientResponseException ex) {
             if (ex.getResponseBodyAsByteArray().length > 0) {
                 returnedMessage = new String(ex.getResponseBodyAsByteArray());
-                log.error("Carrier Response Message Byte Array: {}", returnedMessage);
+                log.error("Carrier Response Message Byte Array: code: {}  message: {}", ex.getRawStatusCode() , returnedMessage);
                 throw new Exception(returnedMessage);
             } else {
                 log.error("Carrier Response Error Message: {}", ex.getMessage());

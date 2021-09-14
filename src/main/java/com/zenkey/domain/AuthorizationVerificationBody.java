@@ -43,29 +43,29 @@ public class AuthorizationVerificationBody {
     @JsonProperty("correlation_id")
     private String correlation_id;
 
-    @JsonProperty("client_notification_token")
-    private String clientNotificationToken;
+    // @JsonProperty("client_notification_token")
+    // private String clientNotificationToken;
 
-    @JsonProperty("jti")
-    private String jti;
+    // @JsonProperty("jti")
+    // private String jti;
 
-    @JsonProperty("sdk_version")
-    private String sdkVersion;
+    // @JsonProperty("sdk_version")
+    // private String sdkVersion;
 
-    @JsonProperty("prompt")
-    private String prompt;
+    // @JsonProperty("prompt")
+    // private String prompt;
 
-    @JsonProperty("options")
-    private String options;
+    // @JsonProperty("options")
+    // private String options;
 
     @JsonProperty("client_id")
     private String clientId;
 
-    @JsonProperty("state")
-    private String state;
+    // @JsonProperty("state")
+    // private String state;
 
-    @JsonProperty("nonce")
-    private String nonce;
+    // @JsonProperty("nonce")
+    // private String nonce;
 
     @JsonProperty("acr_values")
     private String acrValues;
@@ -73,14 +73,14 @@ public class AuthorizationVerificationBody {
     @JsonProperty("login_hint")
     private String loginHint;
 
-    @JsonProperty("login_hint_token")
-    private String loginHintToken;
+    // @JsonProperty("login_hint_token")
+    // private String loginHintToken;
 
-    @JsonProperty("context")
-    private String context;
+    // @JsonProperty("context")
+    // private String context;
 
-    @JsonProperty("referred_binding")
-    private String referredBinding;
+    // @JsonProperty("referred_binding")
+    // private String referredBinding;
 
     public String getBaseUrl() {
         return baseUrl;
@@ -186,6 +186,7 @@ public class AuthorizationVerificationBody {
         this.correlation_id = correlation_id;
     }
 
+    /*
     public String getClientNotificationToken() {
         return clientNotificationToken;
     }
@@ -225,6 +226,7 @@ public class AuthorizationVerificationBody {
     public void setOptions(String options) {
         this.options = options;
     }
+     */
 
     public String getClientId() {
         return clientId;
@@ -234,6 +236,8 @@ public class AuthorizationVerificationBody {
         this.clientId = clientId;
     }
 
+
+    /*
     public String getState() {
         return state;
     }
@@ -249,6 +253,7 @@ public class AuthorizationVerificationBody {
     public void setNonce(String nonce) {
         this.nonce = nonce;
     }
+     */
 
     public String getAcrValues() {
         return acrValues;
@@ -266,6 +271,7 @@ public class AuthorizationVerificationBody {
         this.loginHint = loginHint;
     }
 
+    /*
     public String getLoginHintToken() {
         return loginHintToken;
     }
@@ -289,4 +295,5 @@ public class AuthorizationVerificationBody {
     public void setReferredBinding(String referredBinding) {
         this.referredBinding = referredBinding;
     }
+     */
 }
