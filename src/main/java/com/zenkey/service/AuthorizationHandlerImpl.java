@@ -45,69 +45,12 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * prerequisite of this method.
      * @param clientId
      * @param mccmnc
-     * @param loginHintToken
-     * @param redirectUri
-     * @return
-     */
-    @Deprecated
-    public AuthorizationOidcResponse getAuthorization(String clientId, String mccmnc, String loginHintToken, String redirectUri) {
-        log.info("===> Calling getAuthorization");
-        log.info("===> loginTokenHint: {}", loginHintToken );
-        log.info("===> mccmnc: {}", mccmnc);
-
-        AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
-
-        if (mccmnc == null || mccmnc.trim().length() == 0) {
-            return constructAuthorizationOidcResponse(false, "Authorization failed.  Carrier was not found", AuthorizationStatus.FAILED.name(), null, false);
-        }
-        if (loginHintToken == null || loginHintToken.trim().length() == 0) {
-            return constructAuthorizationOidcResponse(false, "Authorization failed.  A login hint token is required for authorization", AuthorizationStatus.FAILED.name(), null, false);
-        }
-
-        log.info("===> Creating new DiscoveryIssuerServiceImpl object");
-        DiscoveryIssuerService discoveryIssuerService = new DiscoveryIssuerServiceImpl();
-        ResponseEntity<String> responseEntityAuth = null;
-        log.info("===> About to get authorization response");
-        try {
-            responseEntityAuth = discoveryIssuerService.callDiscoveryIssuerService(clientId, mccmnc, null, null);
-            log.info("===> Successfully got authorization response");
-            log.info("======================= Completed Step 1 or 3 - Discovery Issuer:  Received OIDC Config");
-        }  catch (Exception ex) {
-            String returnMessage = String.format("Authorization Failed: %s", ex.getMessage());
-            log.error(returnMessage);
-            return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
-        }
-        log.info("===> Authorization response is {}", responseEntityAuth.getBody());
-
-        if (responseEntityAuth.getBody() == null) {
-            String parseAuthorizationUrlError = "Not able to parse authorization URL from Oidc config";
-            log.error(parseAuthorizationUrlError);
-            return constructAuthorizationOidcResponse(false, parseAuthorizationUrlError, AuthorizationStatus.FAILED.name(), null);
-        }
-
-        OidcUrlInfo oidcUrlInfo = discoveryIssuerService.buildOidcUrlInfo(responseEntityAuth.getBody());
-        if (oidcUrlInfo == null) {
-            return constructAuthorizationOidcResponse(false, "Error parsing authorization URL from Oidc config", AuthorizationStatus.FAILED.name(), null);
-        } else {
-            log.info("===> OidcUrlInfo: " + oidcUrlInfo.toString());
-
-            String redirectForAuthorizationMessage = "Redirect for authorization";
-            return constructAuthorizationOidcResponse(false, "Returning OIDC Url Info", AuthorizationStatus.SUCCESSFUL.name(), null, true, true, oidcUrlInfo);
-        }
-    }
-
-    /**
-     * Attempt or re-attempt discovery-issuer, which requires known carrier.  Ultimately, should return an authorization code based
-     * on successful call to carriers authorization endpoint.  The carrier is usually determined during discovery ui, which is usually a
-     * prerequisite of this method.
-     * @param clientId
-     * @param mccmnc
      * @param redirectUri
      * @param scopes
      * @return
      */
-    public AuthorizationOidcResponse getAuthorizationOptimized(String clientId, String mccmnc, String redirectUri, List scopes) {
-        log.info("===> Calling getAuthorizationOptimized");
+    public AuthorizationOidcResponse getAuthorization(String clientId, String mccmnc, String redirectUri, List scopes) {
+        log.info("===> Calling getAuthorization");
         log.info("===> mccmnc: {}", mccmnc);
 
         AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
@@ -156,103 +99,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }
     }
 
-    /**
-     *
-     * @param clientId
-     * @param tokenEndPoint
-     * @param userInfoEndpoint
-     * @param mccmnc
-     * @param code
-     * @param clientKeyPairs
-     * @param keyPair
-     * @return
-     */
-    @Deprecated
-    public AuthorizationOidcResponse getAuthorizationToken(String clientId, String tokenEndPoint, String userInfoEndpoint, String mccmnc, String code, String clientKeyPairs, String keyPair) {
-        log.info("Entering getAuthorizationToken");
-        AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
-
-        String signedAssertion = "";
-        String tokenResponse = "";
-
-        try {
-            signedAssertion = getSignedAssertion(clientId, tokenEndPoint, mccmnc, code, clientKeyPairs, keyPair);
-        } catch (Exception ex) {
-            String returnMessage = String.format("===> Get Authorization Token Failed: %s", ex.getMessage());
-            log.error(returnMessage);
-            return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
-        }
-
-        TokenRequestBody tokenRequestBody = createTokenRequestBody(clientId, mccmnc, signedAssertion, code);
-
-        try {
-            tokenResponse = getTokenV2(tokenRequestBody, tokenEndPoint);
-            log.info("Just got token response from getTokenV2: {}", tokenResponse);
-        } catch (OauthException ex) {
-            String returnedMessage = String.format("Error getting tokenV2: OAuthException: %s", ex.getMessage());
-            log.error(returnedMessage);
-            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
-        } catch (Exception ex) {
-            String returnedMessage = String.format("Error getting tokenV2: Exception: %s", ex.getMessage());
-            log.error(returnedMessage);
-            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
-        }
-        log.info("Token response from getTokenV2: {}", tokenResponse);
-
-        ObjectMapper mapper = new ObjectMapper(new JsonFactory());
-        JsonNode jsonNode = null;
-        try {
-            jsonNode = mapper.readTree(tokenResponse);
-        } catch (JsonMappingException ex) {
-            String returnedMessage = String.format("Error JSON parsing tokenResponse: JsonMappingException: %s", ex.getMessage());
-            log.error(returnedMessage);
-            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
-        } catch (JsonProcessingException ex) {
-            String returnedMessage = String.format("Error JSON parsing tokenResponse: JsonProcessingException: %s", ex.getMessage());
-            log.error(returnedMessage);
-            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
-        }
-        String accessToken = ((ObjectNode) jsonNode).get("access_token").asText();
-        log.info("===> Parsed accessToken: {}", accessToken);
-
-        org.json.JSONObject userInfoResponse = null;
-
-        try {
-            userInfoResponse = getUserInfo(userInfoEndpoint, accessToken);
-        } catch (Exception ex) {
-            String returnedMessage = String.format("Error with getUserInfo: Exception: %s", ex.getMessage());
-            log.error(returnedMessage);
-            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
-        }
-        log.info("userInfoResponse: {}", userInfoResponse);
-
-        if (userInfoResponse == null) {
-            String returnedMessage = "User Info is empty.  This is considered abnormal, therefore an error";
-            log.error(returnedMessage);
-            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
-        }
-
-        JsonNode userInfoJson = null;
-
-        mapper = new ObjectMapper(new JsonFactory());
-        try {
-            userInfoJson = mapper.readTree(userInfoResponse.toString());
-        } catch (JsonMappingException ex) {
-            String returnedMessage = String.format("Error converting JSONObject to JsonNode: JsonMappingException: %s", ex.getMessage());
-            log.error(returnedMessage);
-            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
-        } catch (JsonProcessingException ex) {
-            String returnedMessage = String.format("Error converting JSONObject to JsonNode: JsonProcessingException: %s", ex.getMessage());
-            log.error(returnedMessage);
-            return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
-        }
-
-        authorizationResponse = constructAuthorizationOidcResponse(true, "Get User Info Was Successful", AuthorizationStatus.SUCCESSFUL.name(), userInfoJson);
-        log.info("Leaving getAuthorizationToken");
-        return authorizationResponse;
-    }
-
-    public AuthorizationOidcResponse getAuthorizationTokenOptimized(String clientId, String mccmnc, String code, String clientKeyPairs, String keyPair) {
+    public AuthorizationOidcResponse getAuthorizationToken(String clientId, String mccmnc, String code, String clientKeyPairs, String keyPair) {
         log.info("Entering getAuthorizationToken");
         AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
 
