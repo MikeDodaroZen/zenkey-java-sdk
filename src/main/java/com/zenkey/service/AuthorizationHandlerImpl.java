@@ -764,7 +764,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         authVerificationBody.setRedirectUri(redirectUri);
         authVerificationBody.setCorrelation_id(correlationId);
         authVerificationBody.setAud(issuer);
-        authVerificationBody.setNotificationUri("http://192.168.1.159:8094/dashboard/si_callback");
+        authVerificationBody.setNotificationUri("http://localhost:8094/authorization/si_callback");
         authVerificationBody.setClientId(clientId);
         authVerificationBody.setSub(clientId);
         authVerificationBody.setIss(clientId);
@@ -786,7 +786,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody = new ServerInitiatedFlowRequestBody();
 
         serverInitiatedFlowRequestBody.setBaseUrl(serverInitiatedAuthEndpoint);
-        serverInitiatedFlowRequestBody.setNotificationUri("http://localhost:8094/dashboard/si_callback");
+        serverInitiatedFlowRequestBody.setNotificationUri("http://localhost:8094/authorization/si_callback");
         serverInitiatedFlowRequestBody.setRedirectUri(redirectUri);
         serverInitiatedFlowRequestBody.setClientId(clientId);
         serverInitiatedFlowRequestBody.setAud(issuer);
@@ -870,6 +870,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
                 .put(CLIENT_ID, serverInitiatedFlowRequestBody.getClientId())
                 .put(ACR_VALUES, serverInitiatedFlowRequestBody.getAcrValues())
                 .put(CARRIER_AUTH_ENDPOINT, serverInitiatedFlowRequestBody.getCarrierAuthEndpoint())
+                .put(HEADER_TYPE, serverInitiatedFlowRequestBody.getHeaderType())
                 .put(REQUEST, serverInitiatedFlowRequestBody.getRequest());
         // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), CLIENT_NOTIFICATION_TOKEN, serverInitiatedFlowRequestBody.getClientNotificationToken(), requestBody, null);
         addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), LOGIN_HINT, serverInitiatedFlowRequestBody.getLoginHint(), requestBody, null);
