@@ -34,9 +34,6 @@ public class AuthorizationVerificationBody {
     @JsonProperty("response_type")
     private String responseType;
 
-    @JsonProperty("header_type")
-    private String headerType;
-
     @JsonProperty("redirect_uri")
     private String redirectUri;
 
@@ -160,14 +157,6 @@ public class AuthorizationVerificationBody {
 
     public void setResponseType(String responseType) {
         this.responseType = responseType;
-    }
-
-    public String getHeaderType() {
-        return headerType;
-    }
-
-    public void setHeaderType(String headerType) {
-        this.headerType = headerType;
     }
 
     public String getRedirectUri() {

@@ -772,7 +772,6 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         authVerificationBody.setExp(exp);
         authVerificationBody.setExpiresIn(EXPIRES_IN_VALUE);
         authVerificationBody.setResponseType(ASYNC_TOKEN);
-        authVerificationBody.setHeaderType(HEADER_TYPE_APPLICATION_JSON);
 
         authVerificationBody.setLoginHint(sub);
         authVerificationBody.setScope("openid");
@@ -870,7 +869,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
                 .put(CLIENT_ID, serverInitiatedFlowRequestBody.getClientId())
                 .put(ACR_VALUES, serverInitiatedFlowRequestBody.getAcrValues())
                 .put(CARRIER_AUTH_ENDPOINT, serverInitiatedFlowRequestBody.getCarrierAuthEndpoint())
-                .put(HEADER_TYPE, serverInitiatedFlowRequestBody.getHeaderType())
+                .put(HEADER_TYPE, serverInitiatedFlowRequestBody.getHeaderType().toString())
                 .put(REQUEST, serverInitiatedFlowRequestBody.getRequest());
         // addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), CLIENT_NOTIFICATION_TOKEN, serverInitiatedFlowRequestBody.getClientNotificationToken(), requestBody, null);
         addToRequestIfPresent(serverInitiatedFlowRequestBody.getHeaderType(), LOGIN_HINT, serverInitiatedFlowRequestBody.getLoginHint(), requestBody, null);
