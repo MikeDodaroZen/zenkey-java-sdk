@@ -283,6 +283,18 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
             return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null, true, true, true);
         }
 
+        log.info("===> This response from carrier SI authorize endpoint should be the auth_req_id ");
+
+        String accessToken = null;
+
+        try {
+            accessToken = pollForServerInitiatedToken(returnedMessage, serverInitiatedFlowRequestBody.getNotificationUri());
+        } catch (Exception ex) {
+            String returnMessage = String.format("===> Exception polling for access tokenh: %s", ex.getMessage());
+            log.error(returnMessage);
+            return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null, true, true, true);
+        }
+
         return constructAuthorizationOidcResponse(true, "Server-Initiated Request Was Successful", AuthorizationStatus.SUCCESSFUL.name(), null);
     }
 
@@ -930,6 +942,55 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         log.info("Leaving callServerInitiatedRequest");
 
         return returnedMessage;
+    }
+
+    /**
+     * Poll the carrier for an access token for the pending SI request represented by the provided auth_req_id based on the user
+     * responding to the push request sent to their phone.
+     * @param returnedMessage
+     * @param notificationUrl
+     * @return
+     * @throws Exception
+     */
+    private String pollForServerInitiatedToken(String returnedMessage, String notificationUrl) throws Exception {
+
+        UriComponents urlComponent = null;
+        try {
+            urlComponent = UriComponentsBuilder.newInstance()
+                    .fromHttpUrl(notificationUrl + '/' + returnedMessage)
+                    .build().encode();
+            log.info("===> si_callback URL: {}", urlComponent.toString());
+        } catch (Exception ex) {
+            String message = String.format("Error building si_callback URL that attempts to obtain access token: %s", ex.getMessage());
+            log.error(message, ex);
+            throw new Exception(message);
+        }
+
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(urlComponent.toString(), String.class);
+
+            log.info("si_callback/{auth_req_id} endpoint: {}", urlComponent.toString());
+            log.info("si_callback Response {}", response);
+            returnedMessage = response.getBody();
+            log.info("si_callback Response Body: {}", returnedMessage);
+        } catch (RestClientResponseException ex) {
+            if (ex.getResponseBodyAsByteArray().length > 0) {
+                returnedMessage = new String(ex.getResponseBodyAsByteArray());
+                log.error("si_callback Response Message Byte Array: code: {}  message: {}", ex.getRawStatusCode() , returnedMessage);
+                throw new Exception(returnedMessage);
+            } else {
+                log.error("si_callback Response Error Message: {}", ex.getMessage());
+                returnedMessage = ex.getMessage();
+                throw new Exception(returnedMessage);
+            }
+        } catch (Exception e) {
+            returnedMessage = "Error in calling Token end point" + e.getMessage();
+            log.error(returnedMessage);
+            throw new Exception(returnedMessage);
+        }
+
+        return returnedMessage;
+
     }
 
     private String buildOptimizedDiscoveryRedirectUrl(List<String> scopes, String redirectUrl,  String clientId) throws Exception {
