@@ -13,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-public class DiscoveryIssuerServiceImpl implements DiscoveryIssuerService {
+public class DiscoveryIssuerServiceImpl extends AbstractAuthorizationHandlerImpl implements DiscoveryIssuerService {
 
     private static final Logger log = LoggerFactory.getLogger(DiscoveryIssuerServiceImpl.class);
 
@@ -25,7 +25,7 @@ public class DiscoveryIssuerServiceImpl implements DiscoveryIssuerService {
 
         try {
             UriComponentsBuilder urlBuilder = UriComponentsBuilder.newInstance()
-                    .fromHttpUrl("https://discoveryissuer.xcijv.com/.well-known/openid_configuration")
+                    .fromHttpUrl(DISCOVERY_ISSUER_URL)
                     .queryParam("client_id", clientId);
             if (mccmnc != null) {
                 urlBuilder = urlBuilder.queryParam("mccmnc", mccmnc);
