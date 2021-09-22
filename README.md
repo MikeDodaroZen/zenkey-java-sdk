@@ -100,7 +100,7 @@ Replace the username and password property tag value content with the username a
 }"
 
   ```
-  Since the above is a *.yaml* file, notice the use of double quotes around the keys and values.  Also, notice the escaped double quotes around the inner JSON Object keys and values.  The *.properties* file has slightly different formatting.
+  Since the above is a *.yaml* file, notice the use of double quotes around the keys and values.  Also, notice the escaped double quotes around the inner JSON Object keys and values.  The *.properties* file has slightly different formatting.  The properties will be used as input parameters for the two API calls explained in the next section.
 
 ## Method: **getAuthorization**
 
