@@ -69,6 +69,39 @@ The ZenKey Java SDK is not located on the Maven central repository, also known a
 
 Replace the username and password property tag value content with the username and password that you receive in the email.  The id property tags can be whatever unique name you desire, but the two must have the same value.
 
+## ZenKey Properties File Configuration Setup
+  
+  After purchase, among the downloadable artifacts customers will receive are ZenKey properties, key/value pairs, within both a *.properties* file and a *.yaml* file.  Both files have the same properties.  Use the file that applies to your specific existing application configuration setup.  For example, if you have a Spring Boot application, you will have either an existing *application.yaml* or *application.properties* file in the /resources folder.  All properties are customer-specific.  This is the reason these properties cannot be part of the SDK.  The following is an example of the properties as they would display within your .yaml file:
+
+  ```
+  #
+  #  ZenKey Java SDK properties
+  #
+  clientId: ccid-h2vqzbtklfotaedl
+  clientKeyPairs: "{ \"ccid-h2vqzbtklfotaedl\": \"ccid-h2vqzbtklfotaedl.1623943437897\" }"
+  keyPair: "{
+    \"ccid-h2vqzbtklfotaedl.1623943437897\": {
+      \"alg\": \"RS256\",
+      \"d\": \"DrzJpYM8ASgK4fQbZolBea5Yzk9hZkcMA8BMUn2-6z5JYYfLQRxKlHNP90CNC8h_nWEn7Kjn_JCYVRGjdiHL2IZV_ZGJcaXWoobCnMWJ_G4HFXyJtbovWS1LQXpNagONrTl8IBX61iglKBV2brnGqo_awmHwzAhD5JUyyElwda2vcl71VQ0Cyx1ohfDGWhzAypkRky8Oj8SSGCebpzgRtMaKXN-hs7zEXzXz-aDyRRDQF1MuzAT9ovsgOXjImk6stQD_sOq8OC5BqbV9r6v1u2hr2gm4KM6oksB794NZAH4pDM1Uz3SRxpK-ZEnPQzfB4rPWFnyBvKcHKPwxkRhooQ\",
+      \"dp\": \"KmHp96ZQlKDbsxhteOeEQ1e-0aINAvb9OsDccoLq82Zr6a4UmBL_kqjZ4LJo99OL-dsef81KHc6x_KNBv-LpcRW2WjDcmd0uCNoSFa8rvTtPf_Taav370oD0EYmG1iWjJ0aLt-nkIPklwl2UPYxv3y66EkMznBcbNH_FSTcQjm0\",
+      \"dq\": \"yGGLNvNQdo5MH72KfcmJDDHkyXsfDWcr_E86XRxCqcRbF0OjfWH-7ONFtBXZHBxqcM1h_gPo5Yth2mBUebcu1Gpam3wuqPcN259RBzuLTZmdKkDurn7sHccUCg-pw2zFKTgxbppClpXYfW_sh8W62EIMa_QrxXvEToJryYRaskE\",
+      \"e\": \"AQAB\",
+      \"ext\": true,
+      \"key_ops\": [
+                   \"sign\"
+      ],
+      \"kty\": \"RSA\",
+      \"n\": \"s4GaLCvD3RBTQxzorGyG7fif7TsxkokEIjlLwTcqvKJ6f3qglK1QTd1wLF4j6fMR1QidQQUT-kVLDQwI6wCdDlVvkiqXXSb79A-MhUZIHpwGv7cijPZNMowJQEb_cK0bhoYh6TT8oeSR7yGUTJhtqysmLl3nmVAPI3pioSakOQdAd8OifSGFAhkDlHd5o-JmD6avbgl952241UBvCUrOe98vueJepS0v5Kb-2KOYrCifAsefQ_epHpFRIPytx2IxV2mEYVtdLgl6KEZrRqqIODGsMcDszTRPi3_KBbMCzog-muc801yWPebT5D132uZ7apI2TFwHTSP3EoK-EO7K_Q\",
+      \"p\": \"24XNu-dSOR_0GjlE4K4aUceDuGUiZTPHTcE5Gm5LwaGU-Q9nAYy1ejEYNYALNqhzWlG0l6hPsnxswXJM5_UFPXgRUSLV_fjqp88tlBsj4U77T74r5q1eB5Uk7xkI9NIzNNISisk7W-akuNRUonBmNMcxU4ZR7T0l7XylrranMJ0\",
+      \"q\": \"0VWOBPCY0o9oUdmJO1_mfpA3epvm7iCaO5ukN8DctcSF3MlOGdyMRjrjIV7Mz66saEUXATDwkpjUJ96Q6Bf_MtN93XjfH0ow3YXPPNRfAP3EUq8ZdAV-whvFzBeNny7XRjwYagQRuugwdbCQhYfK6OYKjYFqNix8t1Vesm0SBeE\",
+      \"qi\": \"GDna8NLPlLl15qAXWacn6EXkeTryUOf1-cVs56wZvtRYSiaC3nPTUM2WUQTFkBjoDc0A-doNUikjShSmXs1fRfNRxd906KsVpmRMNoa5wbGMOuyqC_xF9zyPdSNJPvai_srqRasGkvYu--ikaX2BTIC33U3MN5GeWzP1DlsGSho\",
+      \"kid\": \"ccid-h2vqzbtklfotaedl.1623943437897\"
+    }
+}"
+
+  ```
+  Since the above is a *.yaml* file, notice the use of double quotes around the keys and values.  Also, notice the escaped double quotes around the inner JSON Object keys and values.  The *.properties* file has slightly different formatting.
+
 ## Method: **getAuthorization**
 
 The **getAuthorization** method, when successful, gets a registered user's `authorization code` and `mccmnc`, which will be used as input parameters for a subsequent call to the **getAuthorizationToken** method.  
