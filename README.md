@@ -60,8 +60,8 @@ The ZenKey Java SDK is not located on the Maven central repository, also known a
     <servers>
         <server>
             <id>github</id>
-            <username>{add repo username here}</username>
-            <password>{add repo password here}</password>
+            <username>GarryZen</username>
+            <password>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</password>
         </server>
     </servers>
 </settings>
