@@ -3,6 +3,7 @@ package com.zenkey.service;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zenkey.domain.AuthorizationOidcResponse;
 import com.zenkey.domain.AuthorizationStatus;
 import com.zenkey.domain.OidcUrlInfo;
@@ -58,6 +59,8 @@ public class AbstractAuthorizationHandlerImpl {
     protected static final String OPTIMIZED_DISCOVERY_URL = "https://auth.myzenkey.com/v1/auth";
     protected static final String DISCOVERY_ISSUER_URL = "https://discoveryissuer.xcijv.com/.well-known/openid_configuration";
     protected static final String MNO_STATE_VALUE = "login";
+    protected static final String AUTH_REQ_ID = "auth_req_id";
+    protected static final String SI_ACCESS_TOKEN = "access_token";
 
     protected AuthorizationOidcResponse constructAuthorizationOidcResponse(Boolean isSuccess, String message, String sub) {
 
@@ -168,6 +171,26 @@ public class AbstractAuthorizationHandlerImpl {
         String joinedString = String.join(" ", list);
         log.info("joinedString: {}", joinedString);
         return joinedString;
+    }
+
+    /**
+     * Get JSON value for provided JSON key and JSON string data containing JSON key/value pairs.
+     * @param jsonStringData
+     * @param jsonKey
+     * @return
+     */
+    protected String getJsonValueForKey(String jsonStringData, String jsonKey) {
+        JsonNode jsonNode = null;
+        ObjectMapper mapper = new ObjectMapper(new JsonFactory());
+
+        try {
+            jsonNode = mapper.readTree(jsonStringData);
+            log.info("===> Just parsed the JSON string data into JsonNode tree object");
+        } catch (Exception ex) {
+            log.info("===> Error parsing JSON string data");
+            return null;
+        }
+        return ((ObjectNode) jsonNode).get(jsonKey).asText();
     }
 
     protected JsonNode buildJsonNodeForOptimizedDiscoveryRedirectUrl(String optimizedRedirectUrl) {

@@ -285,15 +285,19 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
 
         log.info("===> This response from carrier SI authorize endpoint should be the auth_req_id ");
 
-        String accessToken = null;
+        String authReqId = getJsonValueForKey(returnedMessage, AUTH_REQ_ID);
+
+        String polledResponseWithToken = null;
 
         try {
-            accessToken = pollForServerInitiatedToken(returnedMessage, serverInitiatedFlowRequestBody.getNotificationUri());
+            polledResponseWithToken = pollForServerInitiatedToken(authReqId, serverInitiatedFlowRequestBody.getNotificationUri());
         } catch (Exception ex) {
             String returnMessage = String.format("===> Exception polling for access tokenh: %s", ex.getMessage());
             log.error(returnMessage);
             return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null, true, true, true);
         }
+
+        String accessToken = getJsonValueForKey(polledResponseWithToken, SI_ACCESS_TOKEN);
 
         return constructAuthorizationOidcResponse(true, "Server-Initiated Request Was Successful", AuthorizationStatus.SUCCESSFUL.name(), null);
     }
@@ -792,6 +796,20 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return authVerificationBody;
     }
 
+    /**
+     * Creates ServerInitiatedFlowRequestBody POJO that is used for constructing the server-initiated request body.
+     * @param clientId
+     * @param sub
+     * @param issuer
+     * @param serverInitiatedAuthEndpoint
+     * @param serverInitiatedCancelEndpoint
+     * @param signedAssertion
+     * @param redirectUri
+     * @param correlationId
+     * @param iat
+     * @param exp
+     * @return
+     */
     private ServerInitiatedFlowRequestBody createServerInitiatedRequestBody(String clientId, String sub, String issuer, String serverInitiatedAuthEndpoint, String serverInitiatedCancelEndpoint, String signedAssertion, String redirectUri, String correlationId, int iat, int exp) {
 
         ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody = new ServerInitiatedFlowRequestBody();
@@ -857,6 +875,11 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }
     }
 
+    /**
+     * Build request body for server-initiated request that is made to carrier.  The body includes the encrypted client assertion.
+     * @param serverInitiatedFlowRequestBody
+     * @return
+     */
     public HttpEntity<String> buildJSONRequest(ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody){
         log.info("String representation of response_type: {}", serverInitiatedFlowRequestBody.getResponseType().name());
         log.info("String representation of response_type: {}", serverInitiatedFlowRequestBody.getResponseType().toString());
@@ -902,6 +925,12 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return request;
     }
 
+    /**
+     * Call the carrier's server-initiated authorize endpoint returning the auth_req_id along with the correlation_id and expires_in
+     * @param serverInitiatedFlowRequestBody
+     * @return
+     * @throws Exception
+     */
     private String callServerInitiatedRequest(ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody) throws Exception {
 
         log.info("Entering callServerInitiatedRequest");
@@ -946,18 +975,19 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
 
     /**
      * Poll the carrier for an access token for the pending SI request represented by the provided auth_req_id based on the user
-     * responding to the push request sent to their phone.
-     * @param returnedMessage
+     * responding to the push request sent to their phone.  The token is not sent by the carrier until the user responds to the
+     * push request.
+     * @param authReqId
      * @param notificationUrl
      * @return
      * @throws Exception
      */
-    private String pollForServerInitiatedToken(String returnedMessage, String notificationUrl) throws Exception {
+    private String pollForServerInitiatedToken(String authReqId, String notificationUrl) throws Exception {
 
         UriComponents urlComponent = null;
         try {
             urlComponent = UriComponentsBuilder.newInstance()
-                    .fromHttpUrl(notificationUrl + '/' + returnedMessage)
+                    .fromHttpUrl(notificationUrl + '/' + authReqId)
                     .build().encode();
             log.info("===> si_callback URL: {}", urlComponent.toString());
         } catch (Exception ex) {
@@ -966,6 +996,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
             throw new Exception(message);
         }
 
+        String returnedMessage = null;
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(urlComponent.toString(), String.class);
 
