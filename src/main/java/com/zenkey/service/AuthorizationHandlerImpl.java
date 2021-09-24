@@ -299,7 +299,25 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
 
         String accessToken = getJsonValueForKey(polledResponseWithToken, SI_ACCESS_TOKEN);
 
-        return constructAuthorizationOidcResponse(true, "Server-Initiated Request Was Successful", AuthorizationStatus.SUCCESSFUL.name(), null);
+        org.json.JSONObject userInfoObject = null;
+
+        try {
+            userInfoObject = getUserInfo(oidcUrlInfo.getUserInfoEndpoint(), accessToken);
+        } catch (Exception ex) {
+            String returnedUserInfoError = String.format("Error with getUserInfo: Exception: %s", ex.getMessage());
+            log.error(returnedUserInfoError);
+            return constructAuthorizationOidcResponse(false, returnedUserInfoError, AuthorizationStatus.FAILED.name(), null);
+        }
+
+        JsonNode userInfoResponse = null;
+        try {
+            userInfoResponse = convertJsonObjectToJsonNode(userInfoObject);
+        }  catch (Exception ex) {
+            log.error(ex.getMessage());
+            return constructAuthorizationOidcResponse(false, ex.getMessage(), AuthorizationStatus.FAILED.name(), null);
+        }
+
+        return constructAuthorizationOidcResponse(true, "Server-Initiated Request Was Successful", AuthorizationStatus.SUCCESSFUL.name(), userInfoResponse);
     }
 
     /**

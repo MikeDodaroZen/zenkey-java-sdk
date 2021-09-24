@@ -1,6 +1,8 @@
 package com.zenkey.service;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -210,6 +212,24 @@ public class AbstractAuthorizationHandlerImpl {
         log.info("JSON Node: {}", jsonNode.toString());
         log.info("Leaving buildJsonNodeForOptimizedDiscoveryRedirectUrl");
         return jsonNode;
+    }
+
+    protected JsonNode convertJsonObjectToJsonNode(org.json.JSONObject jsonObject) throws Exception {
+        JsonNode userInfoJson = null;
+
+        ObjectMapper mapper = new ObjectMapper(new JsonFactory());
+        try {
+            userInfoJson = mapper.readTree(jsonObject.toString());
+        } catch (JsonMappingException ex) {
+            String returnedMessage = String.format("Error converting JSONObject to JsonNode: JsonMappingException: %s", ex.getMessage());
+            log.error(returnedMessage);
+            throw new Exception(returnedMessage, ex);
+        } catch (JsonProcessingException ex) {
+            String returnedMessage = String.format("Error converting JSONObject to JsonNode: JsonProcessingException: %s", ex.getMessage());
+            log.error(returnedMessage);
+            throw new Exception(returnedMessage, ex);
+        }
+        return userInfoJson;
     }
 }
 
