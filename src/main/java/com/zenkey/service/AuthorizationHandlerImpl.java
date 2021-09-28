@@ -34,6 +34,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl implements AuthorizationHandler {
 
@@ -833,7 +834,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody = new ServerInitiatedFlowRequestBody();
 
         serverInitiatedFlowRequestBody.setBaseUrl(serverInitiatedAuthEndpoint);
-        serverInitiatedFlowRequestBody.setNotificationUri("http://localhost:8094/authorization/si_callback");
+        serverInitiatedFlowRequestBody.setNotificationUri(NOTIFICATION_URL);
         serverInitiatedFlowRequestBody.setRedirectUri(redirectUri);
         serverInitiatedFlowRequestBody.setClientId(clientId);
         serverInitiatedFlowRequestBody.setAud(issuer);
@@ -992,6 +993,37 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
     }
 
     /**
+     * Using a TimerTask that both sets timer interval, and has implementation code executed every nth interval, call the SP
+     * endpoint that checks if there is token returned from the carrier based on the user responding to push request.
+     * The returned token response is stored in a map so that it can be checked in the caller method.
+     * @param timer
+     * @param interval
+     * @param authReqId
+     * @param notificationUrl
+     * @param tokenMap
+     */
+    public void setInterval(Timer timer, int interval, String authReqId, String notificationUrl, final Map<String,String> tokenMap) {
+        log.info("===> Entering setInterval");
+        // String tokenResponse = null;
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                log.info("===> This executes every nth seconds based on interval");
+                String tokenResponse = null;
+                try {
+                    tokenResponse = getServerInitiatedToken(authReqId, notificationUrl);
+                } catch (Exception ex) {
+
+                }
+                if (tokenResponse != null) {
+                    tokenMap.put(authReqId, tokenResponse);
+                }
+            }
+        },0, interval);
+        log.info("===> Leaving setInterval");
+    }
+
+    /**
      * Poll the carrier for an access token for the pending SI request represented by the provided auth_req_id based on the user
      * responding to the push request sent to their phone.  The token is not sent by the carrier until the user responds to the
      * push request.
@@ -1001,6 +1033,50 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @throws Exception
      */
     private String pollForServerInitiatedToken(String authReqId, String notificationUrl) throws Exception {
+        log.info("===> Entering pollForServerInitiatedToken");
+
+        Map<String, String> tokenMap = new HashMap<>();
+
+        Timer timer = new Timer();
+
+        setInterval(timer, POLL_NOTIFICATION_TIME_INTERVAL, authReqId, notificationUrl, tokenMap);
+
+        int totalTime = POLL_NOTIFICATION_TIME_PERIOD; // in milliseconds
+        long startTime = System.currentTimeMillis();
+        boolean toFinish = false;
+
+        /*
+        Stay in this loop until either timeout period (POLL_NOTIFICATION_TIME_PERIOD) is reached or until a valid token response
+        is detected in the tokenMap.
+         */
+        while (!toFinish)
+        {
+            log.info("===> Still within timeout period");
+            if (tokenMap.get(authReqId) != null) {
+                log.info("===> Found authReqId in tokenMap");
+                timer.cancel();
+                return tokenMap.get(authReqId);
+            }
+            toFinish = (System.currentTimeMillis() - startTime >= totalTime);
+        }
+        timer.cancel();
+        log.info("===> Exceeded timeout period.  Timer cancelled.");
+        // This is only reached if no valid token response is detected in tokenMap before timeout period (POLL_NOTIFICATION_TIME_PERIOD)
+        return null;
+    }
+
+    /**
+     * Poll the carrier for an access token for the pending SI request represented by the provided auth_req_id based on the user
+     * responding to the push request sent to their phone.  The token is not sent by the carrier until the user responds to the
+     * push request.
+     * @param authReqId
+     * @param notificationUrl
+     * @return
+     * @throws Exception
+     */
+    private String getServerInitiatedToken(String authReqId, String notificationUrl) throws Exception {
+
+        log.info("===> Entering getServerInitiatedToken");
 
         UriComponents urlComponent = null;
         try {
@@ -1037,7 +1113,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
             log.error(returnedMessage);
             throw new Exception(returnedMessage);
         }
-
+        log.info("===> Entering getServerInitiatedToken");
         return returnedMessage;
 
     }

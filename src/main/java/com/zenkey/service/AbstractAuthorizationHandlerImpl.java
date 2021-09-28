@@ -60,9 +60,12 @@ public class AbstractAuthorizationHandlerImpl {
     protected static final String USERINFO_ENDPOINT = "userinfo_endpoint";
     protected static final String OPTIMIZED_DISCOVERY_URL = "https://auth.myzenkey.com/v1/auth";
     protected static final String DISCOVERY_ISSUER_URL = "https://discoveryissuer.xcijv.com/.well-known/openid_configuration";
+    protected static final String NOTIFICATION_URL = "http://localhost:8094/authorization/si_callback";
     protected static final String MNO_STATE_VALUE = "login";
     protected static final String AUTH_REQ_ID = "auth_req_id";
     protected static final String SI_ACCESS_TOKEN = "access_token";
+    protected static final int POLL_NOTIFICATION_TIME_PERIOD = 120000;
+    protected static final int POLL_NOTIFICATION_TIME_INTERVAL = 3000;
 
     protected AuthorizationOidcResponse constructAuthorizationOidcResponse(Boolean isSuccess, String message, String sub) {
 
