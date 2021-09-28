@@ -4,6 +4,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class TokenRequestBody {
 
+    public TokenRequestBody(String grantType, String clientId, String redirectUri, String mccmnc, String code, String clientAssertion, String clientAssertionType) {
+        this.grantType = grantType;
+        this.clientId = clientId;
+        this.redirectUri = redirectUri;
+        this.mccmnc = mccmnc;
+        this.code = code;
+        this.clientAssertion = clientAssertion;
+        this.clientAssertionType = clientAssertionType;
+    }
+
     @JsonProperty("grant_type")
     private String grantType;
 

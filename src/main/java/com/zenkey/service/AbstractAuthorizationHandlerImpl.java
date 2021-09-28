@@ -53,6 +53,7 @@ public class AbstractAuthorizationHandlerImpl {
     protected static final String CODE = "code";
     protected static final String CODE_VERIFIER = "code_verifier";
     protected static final String CLIENT_ASSERTION_TYPE = "client_assertion_type";
+    protected static final String CLIENT_ASSERTION_TYPE_VALUE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
     protected static final String CLIENT_ASSERTION = "client_assertion";
     protected static final String REQUEST = "request";
     protected static final String CARRIER_AUTH_ENDPOINT = "carrier_auth_endpoint";
@@ -61,11 +62,16 @@ public class AbstractAuthorizationHandlerImpl {
     protected static final String OPTIMIZED_DISCOVERY_URL = "https://auth.myzenkey.com/v1/auth";
     protected static final String DISCOVERY_ISSUER_URL = "https://discoveryissuer.xcijv.com/.well-known/openid_configuration";
     protected static final String NOTIFICATION_URL = "http://localhost:8094/authorization/si_callback";
+    protected static final String UI_REDIRECT_URL = "http://localhost:4200";
     protected static final String MNO_STATE_VALUE = "login";
     protected static final String AUTH_REQ_ID = "auth_req_id";
     protected static final String SI_ACCESS_TOKEN = "access_token";
+    protected static final String AUTHORIZATION_CODE = "authorization_code";
     protected static final int POLL_NOTIFICATION_TIME_PERIOD = 120000;
     protected static final int POLL_NOTIFICATION_TIME_INTERVAL = 3000;
+
+    protected static final String JWT_HEADER_ASSERTION_ALG = "RS256";
+    protected static final String JWT_HEADER_ASSERTION_TYPE = "jwt";
 
     protected AuthorizationOidcResponse constructAuthorizationOidcResponse(Boolean isSuccess, String message, String sub) {
 

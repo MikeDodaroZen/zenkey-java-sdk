@@ -40,6 +40,24 @@ public class AuthorizationVerificationBody {
     @JsonProperty("correlation_id")
     private String correlation_id;
 
+    public AuthorizationVerificationBody(String baseUrl, String notificationUri, String sub, int iat, int exp, String iss, String aud, int expiresIn, String scope, String responseType, String redirectUri, String correlation_id, String clientId, String acrValues, String loginHint) {
+        this.baseUrl = baseUrl;
+        this.notificationUri = notificationUri;
+        this.sub = sub;
+        this.iat = iat;
+        this.exp = exp;
+        this.iss = iss;
+        this.aud = aud;
+        this.expiresIn = expiresIn;
+        this.scope = scope;
+        this.responseType = responseType;
+        this.redirectUri = redirectUri;
+        this.correlation_id = correlation_id;
+        this.clientId = clientId;
+        this.acrValues = acrValues;
+        this.loginHint = loginHint;
+    }
+
     // @JsonProperty("client_notification_token")
     // private String clientNotificationToken;
 

@@ -197,6 +197,26 @@ public class ServerInitiatedFlowRequestBody {
   @JsonProperty("request")
   private String request = null;
 
+  public ServerInitiatedFlowRequestBody(String scope, String baseUrl, ResponseTypeEnum responseType, HeaderTypeEnum headerType, String carrierAuthEndpoint, String redirectUri, String notificationUri, String iat, String sub, String exp, String iss, String aud, String clientId, String expiresIn, String correlationId, String acrValues, String loginHint, String request) {
+    this.scope = scope;
+    this.baseUrl = baseUrl;
+    this.responseType = responseType;
+    this.headerType = headerType;
+    this.carrierAuthEndpoint = carrierAuthEndpoint;
+    this.redirectUri = redirectUri;
+    this.notificationUri = notificationUri;
+    this.iat = iat;
+    this.sub = sub;
+    this.exp = exp;
+    this.iss = iss;
+    this.aud = aud;
+    this.clientId = clientId;
+    this.expiresIn = expiresIn;
+    this.correlationId = correlationId;
+    this.acrValues = acrValues;
+    this.loginHint = loginHint;
+    this.request = request;
+  }
 
   public ServerInitiatedFlowRequestBody baseUrl(String baseUrl) {
     this.baseUrl = baseUrl;

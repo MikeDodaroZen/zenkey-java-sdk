@@ -485,17 +485,8 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
     private TokenRequestBody createTokenRequestBody(String clientId, String mccmnc, String signedAssertion, String code) {
         log.info("Entering createTokenRequestBody");
 
-        TokenRequestBody tokenRequestBody = new TokenRequestBody();
+        return new TokenRequestBody(AUTHORIZATION_CODE, clientId, UI_REDIRECT_URL, mccmnc, code, signedAssertion, CLIENT_ASSERTION_TYPE_VALUE);
 
-        tokenRequestBody.setGrantType("authorization_code");
-        tokenRequestBody.setClientId(clientId);
-        tokenRequestBody.setRedirectUri("http://localhost:4200");
-        tokenRequestBody.setMccmnc(mccmnc);
-        tokenRequestBody.setCode(code);
-        tokenRequestBody.setClientAssertion(signedAssertion);
-        tokenRequestBody.setClientAssertionType("urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
-
-        return tokenRequestBody;
     }
 
     /**
@@ -534,10 +525,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      */
     private JwtHeaderAssertion createJwtHeaderAssertion(String jwtKeyId) {
         log.info("Entering createJwtHeaderAssertion");
-        JwtHeaderAssertion jwtHeaderAssertion = new JwtHeaderAssertion();
-        jwtHeaderAssertion.setAlg("RS256");
-        jwtHeaderAssertion.setTyp("jwt");
-        jwtHeaderAssertion.setKid(jwtKeyId);
+        JwtHeaderAssertion jwtHeaderAssertion = new JwtHeaderAssertion(JWT_HEADER_ASSERTION_ALG, JWT_HEADER_ASSERTION_TYPE, jwtKeyId);
 
         return jwtHeaderAssertion;
     }
@@ -793,26 +781,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      */
     private AuthorizationVerificationBody createAuthorizationVerificationBody(String clientId, String sub, String carrierAuthEndpoint, String issuer, String redirectUri, String correlationId, int iat, int exp) {
 
-        AuthorizationVerificationBody authVerificationBody = new AuthorizationVerificationBody();
-
-        authVerificationBody.setBaseUrl(carrierAuthEndpoint);
-        authVerificationBody.setRedirectUri(redirectUri);
-        authVerificationBody.setCorrelation_id(correlationId);
-        authVerificationBody.setAud(issuer);
-        authVerificationBody.setNotificationUri("http://localhost:8094/authorization/si_callback");
-        authVerificationBody.setClientId(clientId);
-        authVerificationBody.setSub(clientId);
-        authVerificationBody.setIss(clientId);
-        authVerificationBody.setIat(iat);
-        authVerificationBody.setExp(exp);
-        authVerificationBody.setExpiresIn(EXPIRES_IN_VALUE);
-        authVerificationBody.setResponseType(ASYNC_TOKEN);
-
-        authVerificationBody.setLoginHint(sub);
-        authVerificationBody.setScope("openid");
-        authVerificationBody.setAcrValues(ACR_VALUES_A3);
-
-        return authVerificationBody;
+        return new AuthorizationVerificationBody(carrierAuthEndpoint, NOTIFICATION_URL, sub, iat, exp, clientId, clientId, EXPIRES_IN_VALUE, SCOPE_OPENID, ASYNC_TOKEN, redirectUri, correlationId, clientId, ACR_VALUES_A3, sub);
     }
 
     /**
@@ -831,55 +800,27 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      */
     private ServerInitiatedFlowRequestBody createServerInitiatedRequestBody(String clientId, String sub, String issuer, String serverInitiatedAuthEndpoint, String serverInitiatedCancelEndpoint, String signedAssertion, String redirectUri, String correlationId, int iat, int exp) {
 
-        ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody = new ServerInitiatedFlowRequestBody();
+        return new ServerInitiatedFlowRequestBody(SCOPE_OPENID,
+                serverInitiatedAuthEndpoint,
+                ServerInitiatedFlowRequestBody.ResponseTypeEnum.ASYNC_TOKEN,
+                ServerInitiatedFlowRequestBody.HeaderTypeEnum.APPLICATION_JSON,
+                serverInitiatedAuthEndpoint,
+                redirectUri,
+                NOTIFICATION_URL,
+                String.valueOf(iat),
+                clientId,
+                String.valueOf(exp),
+                clientId,
+                issuer,
+                clientId,
+                String.valueOf(EXPIRES_IN_VALUE),
+                correlationId,
+                ACR_VALUES_A3,
+                sub,
+                signedAssertion);
 
-        serverInitiatedFlowRequestBody.setBaseUrl(serverInitiatedAuthEndpoint);
-        serverInitiatedFlowRequestBody.setNotificationUri(NOTIFICATION_URL);
-        serverInitiatedFlowRequestBody.setRedirectUri(redirectUri);
-        serverInitiatedFlowRequestBody.setClientId(clientId);
-        serverInitiatedFlowRequestBody.setAud(issuer);
-        serverInitiatedFlowRequestBody.setSub(clientId);
-        serverInitiatedFlowRequestBody.setIss(clientId);
-        serverInitiatedFlowRequestBody.setIat(String.valueOf(iat));
-        serverInitiatedFlowRequestBody.setExp(String.valueOf(exp));
-        serverInitiatedFlowRequestBody.setExpiresIn(String.valueOf(EXPIRES_IN_VALUE));
-        serverInitiatedFlowRequestBody.setResponseType(ServerInitiatedFlowRequestBody.ResponseTypeEnum.ASYNC_TOKEN);
-        serverInitiatedFlowRequestBody.setHeaderType(ServerInitiatedFlowRequestBody.HeaderTypeEnum.APPLICATION_JSON);
-
-        serverInitiatedFlowRequestBody.setLoginHint(sub);
-        serverInitiatedFlowRequestBody.setScope(SCOPE_OPENID);
-        serverInitiatedFlowRequestBody.setAcrValues(ACR_VALUES_A3);
-
-        serverInitiatedFlowRequestBody.setCarrierAuthEndpoint(serverInitiatedAuthEndpoint);
-        serverInitiatedFlowRequestBody.setCorrelationId(correlationId);
         // serverInitiatedFlowRequestBody.setCarrierServerInitiatedCancelEndpoint(serverInitiatedCancelEndpoint);
-        serverInitiatedFlowRequestBody.setRequest(signedAssertion);
 
-        /*
-        ServerInitiatedRequestBody serverInitiatedRequestBody = new ServerInitiatedRequestBody();
-
-        serverInitiatedRequestBody.setBaseUrl(serverInitiatedAuthEndpoint);
-        serverInitiatedRequestBody.setNotificationUri("http://192.168.1.159:8094/dashboard/si_callback");
-        serverInitiatedRequestBody.setClientId(clientId);
-        serverInitiatedRequestBody.setAud(issuer);
-        serverInitiatedRequestBody.setSub(clientId);
-        serverInitiatedRequestBody.setIss(clientId);
-        serverInitiatedRequestBody.setIat((int)(new Date().getTime()));
-        serverInitiatedRequestBody.setExp((int)(new Date().getTime() + 3000));
-        serverInitiatedRequestBody.setExpiresIn(3000);
-        serverInitiatedRequestBody.setResponseType(ASYNC_TOKEN);
-        serverInitiatedRequestBody.setHeaderType(HeaderTypeEnum.APPLICATION_JSON);
-
-        serverInitiatedRequestBody.setLoginHint(sub);
-        serverInitiatedRequestBody.setScope(SCOPE_OPENID);
-        serverInitiatedRequestBody.setAcrValues(ACR_VALUES_A3);
-
-        serverInitiatedRequestBody.setCarrierAuthEndpoint(serverInitiatedAuthEndpoint);
-        serverInitiatedRequestBody.setCarrierServerInitiatedCancelEndpoint(serverInitiatedCancelEndpoint);
-        serverInitiatedRequestBody.setRequest(signedAssertion);
-        */
-
-        return serverInitiatedFlowRequestBody;
     }
 
     public void addToRequestIfPresent(ServerInitiatedFlowRequestBody.HeaderTypeEnum headerType, String fieldName, String getFieldData, org.json.JSONObject requestBody, MultiValueMap<String, String> map) {

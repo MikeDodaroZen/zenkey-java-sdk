@@ -6,6 +6,12 @@ public class JwtHeaderAssertion {
     private String typ;
     private String kid;
 
+    public JwtHeaderAssertion(String alg, String typ, String kid) {
+        this.alg = alg;
+        this.typ = typ;
+        this.kid = kid;
+    }
+
     public String getAlg() {
         return alg;
     }
