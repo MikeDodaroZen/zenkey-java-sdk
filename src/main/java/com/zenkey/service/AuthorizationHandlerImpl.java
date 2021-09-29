@@ -212,7 +212,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return authorizationResponse;
     }
 
-    public AuthorizationOidcResponse getAuthorizationServerInitiated(String clientId, String sub, String clientKeyPairs, String keyPair) {
+    public AuthorizationOidcResponse getAuthorizationServerInitiated(String clientId, String sub, String clientKeyPairs, String keyPair, String notificationUri) {
         log.info("===> Calling");
         log.info("===> sub: {}", sub );
 
@@ -264,7 +264,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         log.info("exp String valueOf: {}", String.valueOf(exp));
 
         try {
-            signedAssertion = getSignedAssertionServerInitiated(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), clientKeyPairs, keyPair, redirectUri, correlationId, iat, exp);
+            signedAssertion = getSignedAssertionServerInitiated(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), clientKeyPairs, keyPair, redirectUri, notificationUri, correlationId, iat, exp);
         } catch (Exception ex) {
             String returnMessage = String.format("===> Get Authorization Token Failed: %s", ex.getMessage());
             log.error(returnMessage);
@@ -272,7 +272,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }
         log.info("Got signed assertion");
 
-        ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody = createServerInitiatedRequestBody(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), oidcUrlInfo.getServerInitiatedCancelEndpoint(), signedAssertion, redirectUri, correlationId, iat, exp);
+        ServerInitiatedFlowRequestBody serverInitiatedFlowRequestBody = createServerInitiatedRequestBody(clientId, sub, oidcUrlInfo.getIssuer(), oidcUrlInfo.getServerInitiatedAuthorizationEndpoint(), oidcUrlInfo.getServerInitiatedCancelEndpoint(), signedAssertion, redirectUri, notificationUri, correlationId, iat, exp);
         log.info("Created ServerInitiatedRequestBody");
 
         String returnedMessage = null;
@@ -397,10 +397,10 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         return signedAssertion;
     }
 
-    private String getSignedAssertionServerInitiated(String clientId, String sub, String issuer, String carrierAuthEndpoint, String clientKeyPairs, String keyPair, String redirectUri, String correlationId, int iat, int exp) throws Exception {
+    private String getSignedAssertionServerInitiated(String clientId, String sub, String issuer, String carrierAuthEndpoint, String clientKeyPairs, String keyPair, String redirectUri, String notificationUri, String correlationId, int iat, int exp) throws Exception {
         log.info("Entering getSignedAssertionServerInitiated");
 
-        AuthorizationVerificationBody authVerificationBody = createAuthorizationVerificationBody(clientId, sub, carrierAuthEndpoint, issuer, redirectUri, correlationId, iat, exp);
+        AuthorizationVerificationBody authVerificationBody = createAuthorizationVerificationBody(clientId, sub, carrierAuthEndpoint, issuer, redirectUri, notificationUri, correlationId, iat, exp);
 
         ObjectMapper mapper = new ObjectMapper();
 
@@ -772,9 +772,9 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @param carrierAuthEndpoint
      * @return
      */
-    private AuthorizationVerificationBody createAuthorizationVerificationBody(String clientId, String sub, String carrierAuthEndpoint, String issuer, String redirectUri, String correlationId, int iat, int exp) {
+    private AuthorizationVerificationBody createAuthorizationVerificationBody(String clientId, String sub, String carrierAuthEndpoint, String issuer, String redirectUri, String notificationUri, String correlationId, int iat, int exp) {
 
-        return new AuthorizationVerificationBody(carrierAuthEndpoint, NOTIFICATION_URL, sub, iat, exp, clientId, clientId, EXPIRES_IN_VALUE, SCOPE_OPENID, ASYNC_TOKEN, redirectUri, correlationId, clientId, ACR_VALUES_A3, sub);
+        return new AuthorizationVerificationBody(carrierAuthEndpoint, notificationUri, sub, iat, exp, clientId, clientId, EXPIRES_IN_VALUE, SCOPE_OPENID, ASYNC_TOKEN, redirectUri, correlationId, clientId, ACR_VALUES_A3, sub);
     }
 
     /**
@@ -791,7 +791,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @param exp
      * @return
      */
-    private ServerInitiatedFlowRequestBody createServerInitiatedRequestBody(String clientId, String sub, String issuer, String serverInitiatedAuthEndpoint, String serverInitiatedCancelEndpoint, String signedAssertion, String redirectUri, String correlationId, int iat, int exp) {
+    private ServerInitiatedFlowRequestBody createServerInitiatedRequestBody(String clientId, String sub, String issuer, String serverInitiatedAuthEndpoint, String serverInitiatedCancelEndpoint, String signedAssertion, String redirectUri, String notificationUri, String correlationId, int iat, int exp) {
 
         return new ServerInitiatedFlowRequestBody(SCOPE_OPENID,
                 serverInitiatedAuthEndpoint,
@@ -799,7 +799,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
                 ServerInitiatedFlowRequestBody.HeaderTypeEnum.APPLICATION_JSON,
                 serverInitiatedAuthEndpoint,
                 redirectUri,
-                NOTIFICATION_URL,
+                notificationUri,
                 String.valueOf(iat),
                 clientId,
                 String.valueOf(exp),
