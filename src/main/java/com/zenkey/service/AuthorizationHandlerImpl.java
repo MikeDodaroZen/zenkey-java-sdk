@@ -338,18 +338,11 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
     private String getSignedAssertion(String clientId, String tokenEndpoint, String mccmnc, String code, String clientKeyPairs, String keyPair) throws Exception {
         log.info("Entering getSignedAssertion: tokenEndpoint: {}", tokenEndpoint);
 
-        AssertionBody assertionBody = new AssertionBody();
-
-        assertionBody.setAud(tokenEndpoint);
-        assertionBody.setIss(clientId);
-        assertionBody.setSub(clientId);
-        // Create a version 4 UUID
-        assertionBody.setJti(UUID.randomUUID().toString());
         // Casting to int truncates fractional portion of long if it exists
         int iat = (int)(new Date().getTime() / 1000);
-        assertionBody.setIat(iat);
         int exp = iat + 30 * 60;
-        assertionBody.setExp(exp);
+
+        AssertionBody assertionBody = new AssertionBody(clientId, clientId, tokenEndpoint, UUID.randomUUID().toString(), iat, exp);
 
         ObjectMapper mapper = new ObjectMapper();
 

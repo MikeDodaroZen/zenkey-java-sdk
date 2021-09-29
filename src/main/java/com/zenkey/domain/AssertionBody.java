@@ -9,6 +9,15 @@ public class AssertionBody {
     private int iat;
     private int exp;
 
+    public AssertionBody(String iss, String sub, String aud, String jti, int iat, int exp) {
+        this.iss = iss;
+        this.sub = sub;
+        this.aud = aud;
+        this.jti = jti;
+        this.iat = iat;
+        this.exp = exp;
+    }
+
     public String getIss() {
         return iss;
     }
