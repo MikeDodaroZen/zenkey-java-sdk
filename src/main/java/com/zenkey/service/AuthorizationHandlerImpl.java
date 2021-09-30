@@ -100,7 +100,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }
     }
 
-    public AuthorizationOidcResponse getAuthorizationToken(String clientId, String mccmnc, String code, String clientKeyPairs, String keyPair) {
+    public AuthorizationOidcResponse getAuthorizationToken(String clientId, String mccmnc, String code, String clientKeyPairs, String keyPair, String redirectUri) {
         log.info("Entering getAuthorizationToken");
         AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
 
@@ -143,7 +143,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
             return constructAuthorizationOidcResponse(false, returnMessage, AuthorizationStatus.FAILED.name(), null);
         }
 
-        TokenRequestBody tokenRequestBody = createTokenRequestBody(clientId, mccmnc, signedAssertion, code);
+        TokenRequestBody tokenRequestBody = createTokenRequestBody(clientId, mccmnc, signedAssertion, code, redirectUri);
 
         try {
             tokenResponse = getTokenV2(tokenRequestBody, tokenEndPoint);
@@ -475,10 +475,10 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @param code
      * @return
      */
-    private TokenRequestBody createTokenRequestBody(String clientId, String mccmnc, String signedAssertion, String code) {
+    private TokenRequestBody createTokenRequestBody(String clientId, String mccmnc, String signedAssertion, String code, String redirectUri) {
         log.info("Entering createTokenRequestBody");
 
-        return new TokenRequestBody(AUTHORIZATION_CODE, clientId, UI_REDIRECT_URL, mccmnc, code, signedAssertion, CLIENT_ASSERTION_TYPE_VALUE);
+        return new TokenRequestBody(AUTHORIZATION_CODE, clientId, redirectUri, mccmnc, code, signedAssertion, CLIENT_ASSERTION_TYPE_VALUE);
 
     }
 

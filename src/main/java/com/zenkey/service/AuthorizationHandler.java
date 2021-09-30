@@ -8,7 +8,7 @@ public interface AuthorizationHandler {
 
     AuthorizationOidcResponse getAuthorization(String clientId, String mccmnc, String redirectUri, List scopes);
 
-    AuthorizationOidcResponse getAuthorizationToken(String clientId, String mccmnc, String code, String clientKeyPairs, String keyPair);
+    AuthorizationOidcResponse getAuthorizationToken(String clientId, String mccmnc, String code, String clientKeyPairs, String keyPair, String redirectUri);
 
     AuthorizationOidcResponse getAuthorizationServerInitiated(String clientId, String sub, String clientKeyPairs, String keyPair, String notificationUri);
 }
