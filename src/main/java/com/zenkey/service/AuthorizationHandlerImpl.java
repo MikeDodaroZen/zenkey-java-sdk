@@ -56,7 +56,8 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
 
         AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
 
-        if (mccmnc == null || mccmnc.trim().length() == 0) {
+        Optional<String> optMccmnc = Optional.ofNullable(mccmnc);
+        if (optMccmnc.isEmpty()) {
             String redirectBackToCustomerAppUrl = null;
             try {
                 redirectBackToCustomerAppUrl = buildOptimizedDiscoveryRedirectUrl(scopes, redirectUri, clientId);
@@ -104,7 +105,8 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         log.info("Entering getAuthorizationToken");
         AuthorizationOidcResponse authorizationResponse = new AuthorizationOidcResponse();
 
-        if (mccmnc == null || mccmnc.trim().length() == 0) {
+        Optional<String> optMccmnc = Optional.ofNullable(mccmnc);
+        if (optMccmnc.isEmpty()) {
             return constructAuthorizationOidcResponse(false, "Authorization failed.  Carrier was not found", AuthorizationStatus.FAILED.name(), null, false);
         }
 
@@ -175,18 +177,18 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         String accessToken = ((ObjectNode) jsonNode).get("access_token").asText();
         log.info("===> Parsed accessToken: {}", accessToken);
 
-        org.json.JSONObject userInfoResponse = null;
+        Optional<org.json.JSONObject> optUserInfoResponse;
 
         try {
-            userInfoResponse = getUserInfo(userInfoEndpoint, accessToken);
+            optUserInfoResponse = getUserInfo(userInfoEndpoint, accessToken);
         } catch (Exception ex) {
             String returnedMessage = String.format("Error with getUserInfo: Exception: %s", ex.getMessage());
             log.error(returnedMessage);
             return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
         }
-        log.info("userInfoResponse: {}", userInfoResponse);
+        log.info("userInfoResponse: {}", optUserInfoResponse.get());
 
-        if (userInfoResponse == null) {
+        if (optUserInfoResponse.isEmpty()) {
             String returnedMessage = "User Info is empty.  This is considered abnormal, therefore an error";
             log.error(returnedMessage);
             return constructAuthorizationOidcResponse(false, returnedMessage, AuthorizationStatus.FAILED.name(), null);
@@ -196,7 +198,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
 
         mapper = new ObjectMapper(new JsonFactory());
         try {
-            userInfoJson = mapper.readTree(userInfoResponse.toString());
+            userInfoJson = mapper.readTree(optUserInfoResponse.get().toString());
         } catch (JsonMappingException ex) {
             String returnedMessage = String.format("Error converting JSONObject to JsonNode: JsonMappingException: %s", ex.getMessage());
             log.error(returnedMessage);
@@ -300,10 +302,10 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
 
         String accessToken = getJsonValueForKey(polledResponseWithToken, SI_ACCESS_TOKEN);
 
-        org.json.JSONObject userInfoObject = null;
+        Optional<org.json.JSONObject> optUserInfoObject;
 
         try {
-            userInfoObject = getUserInfo(oidcUrlInfo.getUserInfoEndpoint(), accessToken);
+            optUserInfoObject = getUserInfo(oidcUrlInfo.getUserInfoEndpoint(), accessToken);
         } catch (Exception ex) {
             String returnedUserInfoError = String.format("Error with getUserInfo: Exception: %s", ex.getMessage());
             log.error(returnedUserInfoError);
@@ -312,7 +314,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
 
         JsonNode userInfoResponse = null;
         try {
-            userInfoResponse = convertJsonObjectToJsonNode(userInfoObject);
+            userInfoResponse = convertJsonObjectToJsonNode(optUserInfoObject.get());
         }  catch (Exception ex) {
             log.error(ex.getMessage());
             return constructAuthorizationOidcResponse(false, ex.getMessage(), AuthorizationStatus.FAILED.name(), null);
@@ -707,7 +709,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
      * @return
      * @throws Exception
      */
-    private org.json.JSONObject getUserInfo(String url, String token) throws Exception {
+    private Optional<org.json.JSONObject> getUserInfo(String url, String token) throws Exception {
         log.info("Entering getUserInfo");
         RestTemplate restTemplateWithInterceptors = new RestTemplate();
         HttpStatus status = null;
@@ -762,7 +764,7 @@ public class AuthorizationHandlerImpl extends AbstractAuthorizationHandlerImpl i
         }
         log.info("Leaving getUserInfo");
 
-        return body;
+        return Optional.ofNullable(body);
     }
 
     /**
