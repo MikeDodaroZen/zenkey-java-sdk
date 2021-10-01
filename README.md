@@ -98,10 +98,21 @@ Replace the username and password property tag value content with the username a
       \"kid\": \"ccid-h2vqzbtklfotaedl.1623943437897\"
     }
 }"
-
   ```
   Since the above is a *.yaml* file, notice the use of double quotes around the keys and values.  Also, notice the escaped double quotes around the inner JSON Object keys and values.  The *.properties* file has slightly different formatting.  The properties will be used as input parameters for the two API calls explained in the next section.
 
+  ## ZenKey Java SDK Interface Made Simple
+
+  There is a single Java SDK interface that a service-provider developer will utilize:
+```
+  public interface AuthorizationHandler {
+
+    AuthorizationOidcResponse getAuthorization(String clientId, String mccmnc, String redirectUri, List scopes);
+
+  AuthorizationOidcResponse getAuthorizationToken(String clientId, String mccmnc, String code, String clientKeyPairs, String keyPair, String redirectUri);
+
+  }
+```
 ## Method: **getAuthorization**
 
 The **getAuthorization** method, when successful, gets a registered user's `authorization code` and `mccmnc`, which will be used as input parameters for a subsequent call to the **getAuthorizationToken** method.  
@@ -118,8 +129,15 @@ Optimized `discovery-ui`, which is an automatic redirect that is a brief interru
 
 ## Method: **getAuthorizationToken**
 Within this call the remaining OAuth2 workflow steps are executed within the SDK.
+    The following input parameters are required for the getAuthorizationToken() API method:
+      - clientId - Obtained by SP during client registration.  It is the ID that begins with ‘ccid’.
+      - mccmnc - This is a returned property obtained from the optimized discovery-ui process where the user is redirected to in order for the user’s phone carrier to be determined based on the user’s selected phone number.
+      - code (authorization code) - This is obtained from the optimized discovery-ui process.  UI (Angular) code that is discussed below explains exactly how to obtain this property.
+      - clientKeyPairs - This is a string property that will be provided to the SP when they download the Java SDK.
+      - keyPair - This is a string property that will be provided to the SP when they download the Java SDK.
+      - redirectUri - This is the publicly exposed URL of the SP’s application that is making this authorization request.
 
-- If successful, the user info is returned.  Again, this is handled by the SDK.
+If successful, the user info is returned.  Again, this is handled by the SDK.
 
  - There are no interruptions or automatic redirects during this method execution.  Everything happens behind-the-scenes on the server-side before returning to the UI with the user info.
 
@@ -177,7 +195,6 @@ The following example is Angular client-side code within the *login-page.compone
     let movieAccountUserBody = {
       userName: (localStorage.getItem("username") != undefined) ? localStorage.getItem("username") : this.loginForm.value.username,
       mccmnc: this.mccmnc,
-      redirectUri: Globals.REDIRECT_URI_NEW_SP_APP,
       scopes: this.scopesArray
     };
 
